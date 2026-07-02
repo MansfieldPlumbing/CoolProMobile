@@ -18,6 +18,8 @@
 //   await disposeSelector()
 // ---------------------------------------------------------------------------
 
+import { gpuAvailable, withGpuFallback } from './gpu-fallback.js';
+
 const CDN = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4';
 // Quality first: full SAM ViT-B (fp16 ≈189MB on WebGPU) gives much cleaner masks than the
 // tiny SlimSAM-77. If it can't load (low memory / no fp16 support) we fall back to SlimSAM.
@@ -28,21 +30,9 @@ const MAX_IN = 1024;
 let _activeModel = null;
 
 let _ready = null, _busy = false;
-let _forceWasm = (() => { try { return localStorage.getItem('a4q-ml-wasm') === '1'; } catch (_) { return false; } })();
 let _cacheKey = null, _emb = null, _embW = 0, _embH = 0, _scale = 1;
 
 export function selectorBusy() { return _busy; }
-
-function isGpuError(e) { return /webgpu|gpu|ortrun|bind ?group|validation|createbindgroup|shader|device lost/i.test(String((e && e.message) || e)); }
-async function withWasmFallback(run, onStatus) {
-  try { return await run(); }
-  catch (e) {
-    if (_forceWasm || !isGpuError(e)) throw e;
-    onStatus && onStatus('GPU not supported here — switching to compatibility mode…');
-    _forceWasm = true; try { localStorage.setItem('a4q-ml-wasm', '1'); } catch (_) {} await disposeSelector();
-    return await run();
-  }
-}
 
 // Byte-aggregated download progress across a model's many files (each else reports 0→100%
 // separately, which looks like it's downloading several times). One fresh aggregator per try.
@@ -62,7 +52,7 @@ function makeProgress(onStatus) {
 async function ensure(onStatus) {
   if (_ready) return _ready;
   _ready = (async () => {
-    const device = (!_forceWasm && typeof navigator !== 'undefined' && navigator.gpu) ? 'webgpu' : 'wasm';
+    const device = gpuAvailable() ? 'webgpu' : 'wasm';
     const T = await import(/* @vite-ignore */ CDN);
     T.env.allowLocalModels = false;
     const candidates = device === 'webgpu' ? MODELS_GPU : MODELS_WASM;
@@ -127,7 +117,7 @@ export function primeSelector(srcCanvas, key, onStatus) {
 export async function selectAt(srcCanvas, x, y, key, onStatus) {
   if (_busy) throw new Error('wand is busy');
   _busy = true;
-  try { return await withWasmFallback(() => _selectInfer(srcCanvas, x, y, key, onStatus), onStatus); }
+  try { return await withGpuFallback(() => _selectInfer(srcCanvas, x, y, key, onStatus), disposeSelector, onStatus); }
   finally { _busy = false; }
 }
 
@@ -137,7 +127,7 @@ export async function selectAt(srcCanvas, x, y, key, onStatus) {
 export async function selectPoints(srcCanvas, pts, labels, key, onStatus) {
   if (_busy) throw new Error('wand is busy');
   _busy = true;
-  try { return await withWasmFallback(() => _pointsInfer(srcCanvas, pts, labels, key, onStatus), onStatus); }
+  try { return await withGpuFallback(() => _pointsInfer(srcCanvas, pts, labels, key, onStatus), disposeSelector, onStatus); }
   finally { _busy = false; }
 }
 
@@ -147,7 +137,7 @@ export async function selectPoints(srcCanvas, pts, labels, key, onStatus) {
 export async function selectLasso(srcCanvas, pts, key, onStatus) {
   if (_busy) throw new Error('wand is busy');
   _busy = true;
-  try { return await withWasmFallback(() => _lassoInfer(srcCanvas, pts, key, onStatus), onStatus); }
+  try { return await withGpuFallback(() => _lassoInfer(srcCanvas, pts, key, onStatus), disposeSelector, onStatus); }
   finally { _busy = false; }
 }
 

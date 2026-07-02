@@ -27,6 +27,8 @@
 // used here is stable across Transformers.js v3 and v4.
 // ---------------------------------------------------------------------------
 
+import { gpuAvailable, withGpuFallback } from './gpu-fallback.js';
+
 const CDN = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4';
 const MODEL = 'briaai/RMBG-1.4';
 const MAX_IN  = 1024;   // working resolution for inference (RMBG runs near this anyway)
@@ -34,23 +36,9 @@ const MAX_OUT = 3072;   // cap the produced cut-out so phones don't OOM
 
 let _ready = null;      // memoised { T, model, processor, device }
 let _busy = false;      // single-job lock
-let _forceWasm = false; // set true after a WebGPU run failure (e.g. Adreno Softmax bug)
 
-export function mlDevice() { return (!_forceWasm && typeof navigator !== 'undefined' && navigator.gpu) ? 'webgpu' : 'wasm'; }
+export function mlDevice() { return gpuAvailable() ? 'webgpu' : 'wasm'; }
 export function mlBusy() { return _busy; }
-
-// Some mobile GPUs (e.g. Samsung Adreno) fail certain WebGPU ops at run time
-// ("CreateBindGroup Softmax", bind group validation). Detect that and retry on WASM.
-function isGpuError(e) { return /webgpu|gpu|ortrun|bind ?group|validation|createbindgroup|shader|device lost/i.test(String((e && e.message) || e)); }
-async function withWasmFallback(run, onStatus) {
-  try { return await run(); }
-  catch (e) {
-    if (_forceWasm || !isGpuError(e)) throw e;
-    onStatus && onStatus('GPU not supported here — switching to compatibility mode…');
-    _forceWasm = true; try { localStorage.setItem('a4q-ml-wasm', '1'); } catch (_) {} await disposeSegmenter();   // drop the WebGPU model, rebuild on WASM
-    return await run();
-  }
-}
 
 // Load (once) the library + model. onStatus(text) is called with progress lines.
 async function ensureModel(onStatus) {
@@ -129,7 +117,7 @@ async function _maskInfer(src, onStatus) {
 export async function foregroundMask(src, onStatus) {
   if (_busy) throw new Error('AI is busy — let the current job finish');
   _busy = true;
-  try { return await withWasmFallback(() => _maskInfer(src, onStatus), onStatus); }
+  try { return await withGpuFallback(() => _maskInfer(src, onStatus), disposeSegmenter, onStatus); }
   finally { _busy = false; }
 }
 

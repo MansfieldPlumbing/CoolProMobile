@@ -14,10 +14,12 @@
   --muted:     #8b93a7;
   --faint:     #5b6275;
 
+  /* One honest blue, not a blue-into-violet gradient: --accent-2 is a deeper shade of the SAME
+     hue (monochromatic), not a hue-shift toward purple. Public-interest tool, not a neon sign. */
   --accent:    #5b8cff;
-  --accent-2:  #7a6cff;
+  --accent-2:  #2f5fc7;
   --accent-fg: #ffffff;     /* readable foreground ON the accent (obp contract) */
-  --neon:      #5bffd0;
+  --neon:      #3fae9c;     /* calm teal — kept the name (referenced by id elsewhere), toned the value down */
   --success:   #3fcf8e;
   --warning:   #f5b14c;
   --error:     #ef5e6b;
@@ -28,7 +30,11 @@
   --mica-rgb:    20 22 28;
   --mica-opacity: .72;
   --transparency: 1;
-  --glass: rgba(var(--mica-rgb), calc(var(--mica-opacity) * var(--transparency)));
+  /* modern rgb() slash syntax — NOT rgba(var(--mica-rgb), alpha): --mica-rgb is a space-separated
+     triple, and mixing that with a legacy comma before the alpha is invalid CSS, which silently
+     drops the whole background-color (every "acrylic" surface in the shell rendered flat opaque
+     instead of tinted glass). This is the one place that combination has to be right. */
+  --glass: rgb(var(--mica-rgb) / calc(var(--mica-opacity) * var(--transparency)));
 
   /* acrylic material — flickpaint's .mica-panel recipe, ported to host tokens so the studio chrome
      (taskbar, menus, drawers) wears the exact same frosted glass as the paint panes. One recipe,

@@ -8,20 +8,22 @@
 // The presenters CoolPro projects. `kind:'native'` mounts a same-realm module into the stage;
 // `kind:'guest'` hosts a self-contained one-HTML-file app in an iframe (the subsystem
 // "html-applet as a guest the OS hosts" model) and bridges its menu over postMessage.
+// Icons are Cascadia Code NF (Nerd Font, the Font Awesome 4 PUA block) glyphs, rendered via the
+// shared .nf font — one flat, single-color icon vocabulary, no emoji, no per-app rainbow.
 const PRESENTERS = [
   { id: 'home',   name: 'Home',    type: 'home',   kind: 'native', role: 'launcher',
-    icon: '🏠', blurb: 'Launcher — pick a surface.', path: '\\Shell\\Home' },
+    icon: '', blurb: 'Launcher — pick a surface.', path: '\\Shell\\Home' },
   { id: 'editor', name: 'Editor',  type: 'editor', kind: 'native',
-    icon: '🎬', blurb: 'CapCut-style multitrack A/V editor — timeline, preview, MP4 export.',
+    icon: '', blurb: 'CapCut-style multitrack A/V editor — timeline, preview, MP4 export.',
     path: '\\Shell\\Editor' },
   { id: 'paint',  name: 'Paint',   type: 'paint',  kind: 'guest', src: 'apps/paint/index.html',
-    icon: '🖌️', blurb: 'Paint-Shop-Pro raster studio — layers, brushes, AI magic wand & eraser.',
+    icon: '', blurb: 'Paint-Shop-Pro raster studio — layers, brushes, AI magic wand & eraser.',
     path: '\\Shell\\Paint' },
   { id: 'model',  name: '3D',      type: 'model',  kind: 'guest', src: 'apps/three/index.html',
-    icon: '🧊', blurb: 'Image → silhouette → paintable 3D standee. Model maker & massager.',
+    icon: '', blurb: 'Image → silhouette → paintable 3D standee. Model maker & massager.',
     path: '\\Shell\\Model' },
   { id: 'animate', name: 'Animate', type: 'animate', kind: 'guest', src: 'apps/animate/index.html',
-    icon: '🕺', blurb: 'Draw a character, it gets a skeleton, make it dance — presets or camera mocap.',
+    icon: '', blurb: 'Draw a character, it gets a skeleton, make it dance — presets or camera mocap.',
     path: '\\Shell\\Animate' },
 ];
 

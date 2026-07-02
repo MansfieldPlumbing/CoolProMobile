@@ -28,7 +28,7 @@ export function applyTheme() {
   root.dataset.mode = mode;
 
   const accent = getAccent();
-  if (accent) { root.style.setProperty('--accent', accent); root.style.setProperty('--accent-2', shift(accent, 18)); }
+  if (accent) { root.style.setProperty('--accent', accent); root.style.setProperty('--accent-2', darken(accent, 0.62)); }
   else { root.style.removeProperty('--accent'); root.style.removeProperty('--accent-2'); }
 
   root.dataset.mica = getMica() ? 'on' : 'off';
@@ -53,13 +53,14 @@ export function effectiveMode() {
   return (!window.matchMedia || window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
 }
 
-// nudge a hex toward another hue for the derived secondary accent.
-function shift(hex, deg) {
+// Derive the secondary accent as a deeper SHADE of the same hue — monochromatic, not a hue
+// rotation. Whatever color the user picks, --accent-2 reads as "the same color, one step
+// darker," never a drift toward a different (e.g. violet) hue.
+function darken(hex, factor) {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return hex;
-  let n = parseInt(m[1], 16); let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-  // rotate slightly toward violet — cheap, good-enough secondary
-  r = Math.min(255, r + deg); b = Math.min(255, b + deg);
-  return '#' + [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  const n = parseInt(m[1], 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const d = (x) => Math.max(0, Math.round(x * factor));
+  return '#' + [d(r), d(g), d(b)].map((x) => x.toString(16).padStart(2, '0')).join('');
 }
 
 export function initThemeEngine() {

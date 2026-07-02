@@ -529,7 +529,7 @@ async function buildTray() {
   // CoolPro: open ANY image as a model — the generic maker path. (The bundled sample cast
   // needs the art4quinn /gallery art, which isn't vendored here; those tiles self-remove.)
   const opener = document.createElement('button'); opener.className = 'char open-image'; opener.title = 'Open an image';
-  opener.innerHTML = '<span class="ic" style="font-size:26px">📂</span><span>Open image</span>';
+  opener.innerHTML = '<span class="ic" style="font-size:26px"><i class="nf"></i></span><span>Open image</span>';
   const fileIn = document.createElement('input'); fileIn.type = 'file'; fileIn.accept = 'image/*'; fileIn.hidden = true;
   opener.addEventListener('click', () => fileIn.click());
   fileIn.addEventListener('change', () => {
@@ -544,7 +544,7 @@ async function buildTray() {
   // CoolPro: a prominent centered opener on the empty stage, so "open an image" is unmissable.
   if (!document.getElementById('open-hero')) {
     const hero = document.createElement('button'); hero.id = 'open-hero';
-    hero.textContent = '📂 Open an image to start';
+    hero.textContent = 'Open an image to start';
     hero.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:30;' +
       'padding:14px 22px;border-radius:999px;border:0;background:var(--accent,#5b8cff);color:#fff;' +
       'font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.45)';
@@ -565,7 +565,7 @@ async function buildTray() {
     });
     tray.appendChild(b);
   }
-  setStatus('Open an image (📂) to build a paintable 3D standee — drag to paint, drag the background to spin.');
+  setStatus('Open an image to build a paintable 3D standee — drag to paint, drag the background to spin.');
 }
 
 // tools

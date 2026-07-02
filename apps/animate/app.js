@@ -170,7 +170,7 @@ async function loadFromUrl(url) {
   const joints = await guessJoints(cutout);
   buildCharacter(joints);
   setStatus(joints ? 'skeleton found — fix any joints, then pick a motion'
-                   : 'used the template skeleton — tap 🦴 Fix joints to line it up');
+                   : 'used the template skeleton — tap Fix joints to line it up');
   if (!joints) setEditMode(true);
 }
 
@@ -504,7 +504,7 @@ $('toEditor').addEventListener('click', () => {
   if (!lastBlob) return;
   try {
     parent.postMessage({ type: 'export-media', name: lastName, blob: lastBlob, meta: { kind: 'video', ...lastMeta } }, '*');
-    setStatus('sent to the editor timeline 🎬');
+    setStatus('sent to the editor timeline');
   } catch (e) { setStatus('could not reach the editor: ' + e.message); }
 });
 $('shareBtn').addEventListener('click', async () => {

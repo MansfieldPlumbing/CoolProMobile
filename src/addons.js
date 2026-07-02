@@ -81,7 +81,7 @@ async function render(el) {
         ${p.cached
           ? `<button class="btn ghost" data-uncache="${p.id}">Remove</button>`
           : `<button class="btn" data-warm="${p.id}">Cache</button>`}
-        ${p.builtin ? '' : `<button class="btn ghost" data-del="${p.id}" title="Delete add-on">🗑</button>`}
+        ${p.builtin ? '' : `<button class="btn ghost" data-del="${p.id}" title="Delete add-on"><span class="nf"></span></button>`}
       </span>
     </div></div>`).join('') || `<div class="nv-cap" style="padding:14px 16px">No packages yet.</div>`;
 
