@@ -55,7 +55,7 @@ function wireDeckMenu() {
       { label: 'Add video track', icon: '＋', run: proxy('btnAddVideoTrack') },
       { label: 'Add audio track', icon: '＋', run: proxy('btnAddAudioTrack') },
       '-',
-      { label: 'Storage & Add-ons', icon: '⚙', run: proxy('btnAddons') },
+      { label: 'Storage & Add-ons', icon: '', run: proxy('btnAddons') },
     ];
     if (installAvail) list.push({ label: 'Install app', icon: '⤓', run: proxy('btnInstall') });
     return list;
@@ -130,7 +130,7 @@ function binMenu(id) {
     { label: 'Add to timeline', icon: '＋', run: () => { S.addClipFromMedia(id); toast('Added to timeline'); } },
     { label: 'Convert…', icon: '⇄', disabled: !m.file, run: () => { if (m.file) import('./convert.js').then((c) => c.openConvert(m.file)); } },
     '-',
-    { label: 'Remove from bin', icon: '🗑', danger: true, run: () => { S.removeMedia(id); toast('Removed from bin'); } },
+    { label: 'Remove from bin', icon: '', danger: true, run: () => { S.removeMedia(id); toast('Removed from bin'); } },
   ];
 }
 

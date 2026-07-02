@@ -16,27 +16,27 @@ function optionsFor(file) {
   const kind = kindOf(file);
   const stem = (file.name || 'media').replace(/\.\w+$/, '');
   if (kind === 'video') return [
-    { label: '🎵 Extract audio → MP3', run: (f, s) => toAudio(f, 'mp3', stem, s) },
-    { label: '🎵 Extract audio → WAV', run: (f, s) => toAudio(f, 'wav', stem, s) },
-    { label: '✂️ Trim video', trim: true },
-    { label: '🖼️ Outpaint (blurred extend)', run: (f, s) => toOutpaint(f, stem, s) },
-    { label: '🎬 Convert video → MP4', run: (f, s) => toMp4(f, stem, s) },
-    { label: '➕ Add to timeline', timeline: true },
+    { label: '<span class="nf"></span> Extract audio → MP3', run: (f, s) => toAudio(f, 'mp3', stem, s) },
+    { label: '<span class="nf"></span> Extract audio → WAV', run: (f, s) => toAudio(f, 'wav', stem, s) },
+    { label: '<span class="nf"></span> Trim video', trim: true },
+    { label: '<span class="nf"></span> Outpaint (blurred extend)', run: (f, s) => toOutpaint(f, stem, s) },
+    { label: '<span class="nf"></span> Convert video → MP4', run: (f, s) => toMp4(f, stem, s) },
+    { label: '<span class="nf"></span> Add to timeline', timeline: true },
   ];
   if (kind === 'audio') return [
-    { label: '✂️ Trim / ringtone → MP3', trim: true },
-    { label: '🎵 Convert → MP3', run: (f, s) => toAudio(f, 'mp3', stem, s) },
-    { label: '🎵 Convert → WAV', run: (f, s) => toAudio(f, 'wav', stem, s) },
-    { label: '➕ Add to timeline', timeline: true },
+    { label: '<span class="nf"></span> Trim / ringtone → MP3', trim: true },
+    { label: '<span class="nf"></span> Convert → MP3', run: (f, s) => toAudio(f, 'mp3', stem, s) },
+    { label: '<span class="nf"></span> Convert → WAV', run: (f, s) => toAudio(f, 'wav', stem, s) },
+    { label: '<span class="nf"></span> Add to timeline', timeline: true },
   ];
   if (kind === 'image') return [
-    { label: '✂️ Remove background → PNG', run: (f, s) => removeBg(f, stem, s) },
-    { label: '🕺 Animate character', animate: true },
-    { label: '🖼️ Convert → PNG', run: (f, s) => toImage(f, 'png', stem, s) },
-    { label: '🖼️ Convert → JPG', run: (f, s) => toImage(f, 'jpg', stem, s) },
-    { label: '➕ Add to timeline', timeline: true },
+    { label: '<span class="nf"></span> Remove background → PNG', run: (f, s) => removeBg(f, stem, s) },
+    { label: '<span class="nf"></span> Animate character', animate: true },
+    { label: '<span class="nf"></span> Convert → PNG', run: (f, s) => toImage(f, 'png', stem, s) },
+    { label: '<span class="nf"></span> Convert → JPG', run: (f, s) => toImage(f, 'jpg', stem, s) },
+    { label: '<span class="nf"></span> Add to timeline', timeline: true },
   ];
-  return [{ label: '➕ Add to timeline', timeline: true }];
+  return [{ label: '<span class="nf"></span> Add to timeline', timeline: true }];
 }
 
 export function openConvert(file) {
@@ -83,7 +83,7 @@ async function renderTrim(back, file, close) {
       <label>End (s)<input id="cvB" type="number" min="0" step="0.1" value="${dur ? dur.toFixed(1) : ''}"></label>
       ${dur ? `<div class="cv-hint">Clip is ${dur.toFixed(1)}s long.</div>` : ''}
       <div class="cv-actions">
-        <button class="btn primary" data-go>✂️ Trim</button>
+        <button class="btn primary" data-go><span class="nf"></span> Trim</button>
         <button class="cv-again">Back</button>
       </div>
     </div>`;
@@ -115,9 +115,9 @@ async function convertAndShow(back, file, opt, close) {
       <div class="cv-result">
         <div class="cv-ok">✓ ${esc(name)} · ${fmtBytes(blob.size)}</div>
         <div class="cv-actions">
-          <button class="btn primary" data-act="share">📤 Share / Save</button>
+          <button class="btn primary" data-act="share"><span class="nf"></span> Share / Save</button>
           <button class="btn ghost" data-act="dl">⤓ Download</button>
-          <button class="btn ghost" data-act="tl">➕ To timeline</button>
+          <button class="btn ghost" data-act="tl"><span class="nf"></span> To timeline</button>
         </div>
         <button class="cv-again">Convert something else</button>
       </div>`;

@@ -17,7 +17,7 @@
         the user's mobile data for no benefit.
    Update flow is explicit: we do NOT skipWaiting on install — the page detects the
    waiting worker and offers "Update", then posts SKIP_WAITING. */
-const VERSION = 'coolpromobile-v14';
+const VERSION = 'coolpromobile-v15';
 const APP_CACHE = VERSION;
 const CDN_CACHE = 'nocap-cdn';      // stable bucket name (NOT version-suffixed): survives app updates
 const SHARE_CACHE = 'coolpro-share'; // transient: Android share-target hand-off, drained on boot

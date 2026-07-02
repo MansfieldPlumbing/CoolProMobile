@@ -82,23 +82,23 @@ function trackMenu(t) {
   if (!t) return [];
   const last = S.state.project.tracks.length <= 1;
   return [
-    { label: 'Rename track…', icon: '✎', run: () => { const n = prompt('Track name', t.name); if (n != null && n.trim()) S.setTrack(t.id, { name: n.trim() }); } },
+    { label: 'Rename track…', icon: '', run: () => { const n = prompt('Track name', t.name); if (n != null && n.trim()) S.setTrack(t.id, { name: n.trim() }); } },
     '-',
-    { label: 'Mute', icon: '🔇', checked: !!t.muted, run: () => S.setTrack(t.id, { muted: !t.muted }) },
+    { label: 'Mute', icon: '', checked: !!t.muted, run: () => S.setTrack(t.id, { muted: !t.muted }) },
     { label: 'Solo', icon: '◉', checked: !!t.solo, run: () => S.setTrack(t.id, { solo: !t.solo }) },
     '-',
     { label: 'Add video track', icon: '＋', run: () => S.addTrack('video') },
     { label: 'Add audio track', icon: '＋', run: () => S.addTrack('audio') },
     '-',
-    { label: 'Delete track', icon: '🗑', danger: true, disabled: last, run: () => S.removeTrack(t.id) },
+    { label: 'Delete track', icon: '', danger: true, disabled: last, run: () => S.removeTrack(t.id) },
   ];
 }
 function clipMenu(clip) {
   return [
-    { label: 'Split at playhead', icon: '✂', run: () => S.splitClipAt(clip.id, S.state.transport.time) },
+    { label: 'Split at playhead', icon: '', run: () => S.splitClipAt(clip.id, S.state.transport.time) },
     { label: 'Duplicate', icon: '⧉', run: () => S.duplicateClip(clip.id) },
     '-',
-    { label: 'Delete clip', icon: '🗑', danger: true, run: () => S.removeClip(clip.id) },
+    { label: 'Delete clip', icon: '', danger: true, run: () => S.removeClip(clip.id) },
   ];
 }
 // Open the right menu for whatever is under a canvas point (screen px for placement, local px to hit-test).

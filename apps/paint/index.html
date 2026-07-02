@@ -1192,7 +1192,7 @@ function buildTop() {
         <button class="gridbtn" id="f-save">${icon('save')}<span>Save</span></button>
         <button class="gridbtn" id="f-export">${icon('download')}<span>Export</span></button>
       </div>
-      <button class="gridbtn" id="f-assets" style="flex-direction:row;gap:8px;background:rgba(41,84,212,0.18);border:1px solid rgba(41,84,212,0.4)"><span style="font-size:18px">🖼️</span><span>Assets</span></button>
+      <button class="gridbtn" id="f-assets" style="flex-direction:row;gap:8px;background:rgba(41,84,212,0.18);border:1px solid rgba(41,84,212,0.4)"><span style="font-size:18px"><i class="nf"></i></span><span>Assets</span></button>
       <div class="row" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:3px">
         <button id="r-clear" class="gridbtn" style="flex:1;flex-direction:row;gap:6px;background:transparent;border:none">${icon('trash')}<span>Clear</span></button>
         <div class="sep"></div>
@@ -1203,7 +1203,7 @@ function buildTop() {
 
   $('#deck').innerHTML = `
     <div class="pillbar">
-      <a class="iconbtn" href="../" title="Home" style="text-decoration:none;font-size:15px;display:flex;align-items:center;justify-content:center">🏠</a>
+      <a class="iconbtn" href="../" title="Home" style="text-decoration:none;font-size:15px;display:flex;align-items:center;justify-content:center"><i class="nf"></i></a>
       <div class="sep"></div>
       <button class="iconbtn" id="d-undo" title="Undo">${icon('undo')}</button>
       <button class="iconbtn" id="d-redo" title="Redo">${icon('redo')}</button>
@@ -1639,7 +1639,7 @@ async function aiEraseBg() {
     g.drawImage(cut, 0, 0, cv.width, cv.height);
     _aiPts = []; aiMode = 'tap';        // layer changed → drop any stale point session
     reconcileLayers();
-    hud('Background erased ✨');
+    hud('Background erased');
   } catch (e) { console.error(e); hud('AI erase failed — ' + (e.message || e)); }
   finally { aiBusy = false; }
 }
@@ -1788,7 +1788,7 @@ async function aiTap(pt, c) {                          // SAM point prompt
     const key = selKey(c.canvas);
     const { mask, any } = await selectAt(c.canvas, pt.x, pt.y, key, (s) => hud(s));
     if (!any) { hud('No object found there — aim for its centre'); return; }
-    eraseReview = true; compositeSel(mask, selMode(), c.canvas); hud('Selected ✨ — refine, or Erase');
+    eraseReview = true; compositeSel(mask, selMode(), c.canvas); hud('Selected — refine, or Erase');
   } catch (e) { console.error(e); hud('Wand failed — ' + (e.message || e)); }
   finally { aiBusy = false; }
 }
@@ -1805,7 +1805,7 @@ async function aiPointsCommit(c) {
     if (!any) { _aiPts.pop(); hud('Nothing there — tap on the object'); return; }   // drop the unhelpful point
     const m = blankSelMask(c.canvas, false); m.getContext('2d').drawImage(mask, 0, 0, m.width, m.height);
     eraseReview = true; pushUndo(); publishSelMask(m, c.canvas);
-    hud(_aiPts.length > 1 ? 'Refined ✨ — keep tapping ＋/－, or Erase' : 'Selected ✨ — ＋ / － to refine, or Erase');
+    hud(_aiPts.length > 1 ? 'Refined — keep tapping ＋/－, or Erase' : 'Selected — ＋ / － to refine, or Erase');
   } catch (e) { console.error(e); _aiPts.pop(); hud('Wand failed — ' + (e.message || e)); }
   finally { aiBusy = false; }
 }
@@ -1825,7 +1825,7 @@ async function aiLassoCommit(pts, c, snap = aiSnap) {  // lasso -> SAM object sn
       const { selectLasso } = await import('../../vendor/ml/select.js' + ML_V);
       const key = selKey(c.canvas);
       const { mask, any } = await selectLasso(c.canvas, pts, key, (s) => hud(s));
-      if (any) { incoming.getContext('2d').drawImage(mask, 0, 0, incoming.width, incoming.height); hud('Snapped to object ✨'); }
+      if (any) { incoming.getContext('2d').drawImage(mask, 0, 0, incoming.width, incoming.height); hud('Snapped to object'); }
       else { drawLassoInto(incoming, pts, c); hud('No object found — kept your outline'); }
     } catch (e) { console.error(e); drawLassoInto(incoming, pts, c); hud('AI snap failed — kept your outline'); }
     finally { aiBusy = false; }
@@ -1895,7 +1895,7 @@ async function aiMagicErase() {
     const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); g.drawImage(patched, 0, 0);
     setSelection(null);
     _aiPts = []; aiMode = 'tap';        // the layer changed → end this object's session; next tap starts fresh
-    reconcileLayers(); hud('Erased ✨');
+    reconcileLayers(); hud('Erased');
   } catch (e) { console.error(e); hud('Magic eraser failed — ' + (e.message || e)); }
   finally { aiBusy = false; }
 }
@@ -1908,11 +1908,11 @@ function showAiAbout() {
     ov.innerHTML = `
       <div class="mica-panel" style="width:min(420px,94vw);max-height:86vh;overflow:auto;border-radius:18px;padding:18px">
         <div class="row" style="justify-content:space-between;margin-bottom:10px">
-          <h2 class="title" style="margin:0">✨ About the AI tools</h2>
+          <h2 class="title" style="margin:0"><i class="nf">󰙴</i> About the AI tools</h2>
           <button class="iconbtn" id="ai-about-x" style="width:30px;height:30px;font-size:20px">×</button>
         </div>
         <div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.82);display:flex;flex-direction:column;gap:10px">
-          <p style="margin:0"><b>🪄 Tap</b> an object or <b>✏️ Lasso</b> roughly around it — AI snaps to it (toggle <b>🧲 AI snap</b> off for a raw outline). Refine with <b>➕ Add</b> / <b>➖ Remove</b>. <b>🩹 Erase selection</b> removes it and fills it in; <b>✂️ Erase background</b> cuts the subject out. Normal <b>Undo/Redo</b> covers selections too.</p>
+          <p style="margin:0"><b>Tap</b> an object or <b>Lasso</b> roughly around it — AI snaps to it (toggle <b>AI snap</b> off for a raw outline). Refine with <b>Add</b> / <b>Remove</b>. <b>Erase selection</b> removes it and fills it in; <b>Erase background</b> cuts the subject out. Normal <b>Undo/Redo</b> covers selections too.</p>
           <p style="margin:0"><b>Private &amp; on your device.</b> Your pictures never leave this device — the AI runs right here in the browser, nothing is uploaded.</p>
           <p style="margin:0"><b>First use downloads a model</b> (one time, then it's saved for next time). The Eraser model is large (~200&nbsp;MB) — use Wi‑Fi the first time.</p>
           <p style="margin:0"><b>It's experimental.</b> Results can vary or surprise you — tap <b>Undo</b> (↶) to take anything back. Works best in a recent Chrome with graphics acceleration on.</p>
