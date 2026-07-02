@@ -1,0 +1,46 @@
+{
+  "name": "CoolProMobile — the movie studio in your pocket",
+  "short_name": "CoolPro Mobile",
+  "description": "On-device video, audio, image and 3D studio for your phone. No accounts, no uploads, no slop.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0c10",
+  "theme_color": "#0b0c10",
+  "categories": ["video", "graphics", "productivity", "utilities"],
+  "shortcuts": [
+    { "name": "A/V Editor", "short_name": "Editor", "url": "./#editor" },
+    { "name": "Paint", "short_name": "Paint", "url": "./apps/paint/index.html" },
+    { "name": "3D Maker", "short_name": "3D", "url": "./apps/three/index.html" }
+  ],
+  "share_target": {
+    "action": "./share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        { "name": "media", "accept": ["image/*", "video/*", "audio/*"] }
+      ]
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": {
+        "video/*": [".mp4", ".webm", ".mov", ".mkv", ".m4v"],
+        "audio/*": [".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"],
+        "image/*": [".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"]
+      }
+    }
+  ],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

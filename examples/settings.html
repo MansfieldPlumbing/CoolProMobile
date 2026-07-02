@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="settings-page-body">
+  <div class="settings-standalone-container">
+    <h1 class="settings-page-title">Settings</h1>
+
+    <div class="settings-card-group">
+      <!-- Card 1 -->
+      <div class="settings-card">
+        <div class="settings-card-text">
+          <div class="settings-card-title">Show drive letters</div>
+          <div class="settings-card-desc">Display drive letters (e.g. C:) in the navigation pane.</div>
+        </div>
+        <div class="toggle active"></div>
+      </div>
+      <!-- Card 2 -->
+      <div class="settings-card">
+        <div class="settings-card-text">
+          <div class="settings-card-title">Show encrypted or compressed files in color</div>
+        </div>
+        <div class="toggle"></div>
+      </div>
+      <!-- Card 3 -->
+      <div class="settings-card">
+        <div class="settings-card-text">
+          <div class="settings-card-title">Show pop-up description for folder and desktop items</div>
+        </div>
+        <div class="toggle active"></div>
+      </div>
+      <!-- Card 4 -->
+      <div class="settings-card">
+        <div class="settings-card-text">
+          <div class="settings-card-title">Show file preview handlers in preview pane</div>
+          <div class="settings-card-desc">Previews contents of supported files without opening them.</div>
+        </div>
+        <div class="toggle active"></div>
+      </div>
+      <!-- Card 5 -->
+      <div class="settings-card">
+        <div class="settings-card-text">
+          <div class="settings-card-title">Show status bar</div>
+          <div class="settings-card-desc">Displays item count and selection summary at the bottom.</div>
+        </div>
+        <div class="toggle active"></div>
+      </div>
+      <!-- Card 6 -->
+      <div class="settings-card">
+        <div class="settings-card-text">
+          <div class="settings-card-title">Use check boxes to select items</div>
+          <div class="settings-card-desc">Allows selecting multiple items by clicking checkboxes next to them.</div>
+        </div>
+        <div class="toggle"></div>
+      </div>
+    </div>
+
+    <h2 class="settings-section-title">When typing into list view</h2>
+    <div class="settings-card-group">
+      <label class="settings-radio-row">
+        <input type="radio" name="typing-behavior" value="search">
+        <span class="custom-radio"></span>
+        <div class="settings-card-text">
+          <div class="settings-card-title">Automatically type into the Search Box</div>
+        </div>
+      </label>
+      <label class="settings-radio-row">
+        <input type="radio" name="typing-behavior" value="select" checked>
+        <span class="custom-radio"></span>
+        <div class="settings-card-text">
+          <div class="settings-card-title">Select the typed item in the view</div>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <script>
+    // Inline script for standalone toggles
+    document.querySelectorAll('.toggle').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.currentTarget.classList.toggle('active');
+      });
+    });
+  </script>
+</body>
+</html>

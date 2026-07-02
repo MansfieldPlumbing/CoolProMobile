@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Files - Standalone Explorer</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Custom Tailwind Configuration for Custom Fonts, Themes and Transitions -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.15s ease-out',
+            'slide-in': 'slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' }
+            },
+            slideIn: {
+              '0%': { transform: 'translateX(-20px)', opacity: '0' },
+              '100%': { transform: 'translateX(0)', opacity: '1' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Core React and Babel CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* Sleek Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    
+    /* System specific styles */
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    
+    /* Background grid */
+    .bg-grid {
+      background-size: 40px 40px;
+      background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    }
+  </style>
+</head>
+<body class="bg-[#111111] text-[#f2f2f2] font-sans antialiased overflow-hidden select-none w-screen h-screen">
+
+  <div id="root" class="w-full h-full"></div>
+
+  <!-- React JSX Client Application Code -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    // Direct Inline Feather SVG Components to bypass loading libraries
+    const Icons = {
+      Folder: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+      ),
+      File: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+        </svg>
+      ),
+      ArrowLeft: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+      ),
+      ArrowRight: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      ),
+      ArrowUp: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <line x1="12" y1="19" x2="12" y2="5"></line>
+          <polyline points="5 12 12 5 19 12"></polyline>
+        </svg>
+      ),
+      RotateCw: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      ),
+      Plus: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      ),
+      Scissors: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <circle cx="6" cy="6" r="3"></circle>
+          <circle cx="6" cy="18" r="3"></circle>
+          <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+          <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+          <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+        </svg>
+      ),
+      Copy: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      ),
+      ClipboardPaste: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+        </svg>
+      ),
+      Type: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <polyline points="4 7 4 4 20 4 20 7"></polyline>
+          <line x1="9" y1="20" x2="15" y2="20"></line>
+          <line x1="12" y1="4" x2="12" y2="20"></line>
+        </svg>
+      ),
+      Trash2: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      ),
+      ArrowUpDown: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <polyline points="19 12 12 19 5 12"></polyline>
+          <polyline points="5 12 12 5 19 12"></polyline>
+        </svg>
+      ),
+      LayoutGrid: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+      ),
+      CheckSquare: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <polyline points="9 11 12 14 22 4"></polyline>
+          <rect x="1" y="9" width="14" height="14" rx="2" ry="2"></rect>
+        </svg>
+      ),
+      Settings: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      ),
+      HardDrive: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <line x1="22" y1="12" x2="2" y2="12"></line>
+          <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
+          <line x1="6" y1="16" x2="6.01" y2="16"></line>
+          <line x1="10" y1="16" x2="10.01" y2="16"></line>
+        </svg>
+      ),
+      PanelLeft: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
+        </svg>
+      ),
+      Search: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      ),
+      X: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      ),
+      Save: ({ size = 16, className = "" }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+      )
+    };
+
+    // Helper functions
+    const formatSize = (bytes) => {
+      if (!bytes || isNaN(bytes)) return '--';
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    };
+
+    const cn = (...classes) => classes.filter(Boolean).join(' ');
+
+    // Windows style toggles conforming to new design rules (non-neon, sleek slate)
+    const WinToggle = ({ checked, onChange }) => (
+      <button 
+        onClick={() => onChange(!checked)}
+        className={cn(
+          "w-[40px] h-[20px] rounded-full border border-transparent relative transition-colors duration-200 shrink-0 cursor-pointer", 
+          checked ? "bg-[#005fb8] hover:bg-[#005fb8]/90" : "bg-transparent border-[#878787] hover:border-[#a0a0a0]"
+        )}
+      >
+        <div className={cn(
+          "absolute top-1/2 -translate-y-1/2 w-[12px] h-[12px] rounded-full transition-all duration-200", 
+          checked ? "bg-white left-[24px]" : "bg-[#878787] left-[3px]"
+        )} />
+      </button>
+    );
+
+    const SettingsCard = ({ title, description, children }) => (
+      <div className="bg-[#202020] p-4 rounded-sm border border-transparent flex items-center justify-between mb-1 gap-4">
+        <div className="flex-1">
+          <div className="text-[14px] font-medium text-white">{title}</div>
+          {description && <div className="text-[12px] text-gray-400 mt-1 leading-relaxed">{description}</div>}
+        </div>
+        <div className="shrink-0">{children}</div>
+      </div>
+    );
+
+    // Dynamic initial mock file system path with registry entries and typical files directory tree
+    const INITIAL_FS = {
+      'C:/': [
+        { name: 'dist', type: 'directory', path: 'C:/dist', size: 0, date: '2026-05-30T08:00:00Z' },
+        { name: 'node_modules', type: 'directory', path: 'C:/node_modules', size: 0, date: '2026-05-30T08:00:00Z' },
+        { name: 'public', type: 'directory', path: 'C:/public', size: 0, date: '2026-05-30T08:00:00Z' },
+        { name: 'src', type: 'directory', path: 'C:/src', size: 0, date: '2026-05-30T08:00:00Z' },
+        { name: '.env.example', type: 'file', path: 'C:/.env.example', size: 445, date: '2026-05-30T08:05:00Z', content: 'MY_NEW_VAR=\nANOTHER_SECRET=' },
+        { name: '.gitignore', type: 'file', path: 'C:/.gitignore', size: 73, date: '2026-05-30T08:05:00Z', content: 'node_modules\ndist\n.env' },
+        { name: 'AGENTS.md', type: 'file', path: 'C:/AGENTS.md', size: 24700, date: '2026-05-30T08:12:00Z', content: '# Instructions\nObjective: Convert OS-like UI into single functional appलेट.' },
+        { name: 'fix.js', type: 'file', path: 'C:/fix.js', size: 633, date: '2026-05-30T08:12:00Z', content: 'console.log("Fix compiler applied successfully.");' }
+      ],
+      'C:/src': [
+        { name: 'components', type: 'directory', path: 'C:/src/components', size: 0, date: '2026-05-30T08:02:00Z' },
+        { name: 'App.tsx', type: 'file', path: 'C:/src/App.tsx', size: 4835, date: '2026-05-30T08:14:00Z', content: 'import React from "react";\nexport default function App() {\n...' },
+        { name: 'System.Store.ts', type: 'file', path: 'C:/src/System.Store.ts', size: 5214, date: '2026-05-30T08:21:00Z', content: 'export type TabType = "terminal" | "explorer";' }
+      ],
+      'C:/src/components': [
+        { name: 'Terminal.App.Files.tsx', type: 'file', path: 'C:/src/components/Terminal.App.Files.tsx', size: 16258, date: '2026-05-30T08:44:00Z', content: 'export default function TerminalFiles() {\n\t// File explorer interface\n}' },
+        { name: 'Terminal.Settings.Explorer.tsx', type: 'file', path: 'C:/src/components/Terminal.Settings.Explorer.tsx', size: 5120, date: '2026-05-30T08:45:00Z', content: 'export default function ExplorerSettings() {\n\t// Option sets\n}' }
+      ],
+      'REGISTRY:/': [
+        { name: 'HKLM', type: 'directory', path: 'REGISTRY:/HKLM', size: 0, date: '2026-05-30T08:00:00Z' },
+        { name: 'HKCU', type: 'directory', path: 'REGISTRY:/HKCU', size: 0, date: '2026-05-20T08:00:00Z' }
+      ],
+      'REGISTRY:/HKLM': [
+        { name: 'SYSTEM', type: 'directory', path: 'REGISTRY:/HKLM/SYSTEM', size: 0, date: '2026-05-30T08:01:00Z' },
+        { name: 'HARDWARE', type: 'directory', path: 'REGISTRY:/HKLM/HARDWARE', size: 0, date: '2026-05-30T08:01:00Z' }
+      ],
+      'REGISTRY:/HKLM/SYSTEM': [
+        { name: 'Microkernel.ini', type: 'file', path: 'REGISTRY:/HKLM/SYSTEM/Microkernel.ini', size: 104, date: '2026-05-30T08:02:00Z', content: '[Microkernel]\nEnableThreadIPC=1\nStrictHandleChecks=1\nQuantum=15' },
+        { name: 'DawnGraphics.ini', type: 'file', path: 'REGISTRY:/HKLM/SYSTEM/DawnGraphics.ini', size: 85, date: '2026-05-30T08:03:00Z', content: '[DawnGraphics]\nMeshShaderSupport=1\nForceWebGPU=1\nEnableSDF=1' }
+      ]
+    };
+
+    // Shared State management within single App to support multiple simulated workspace elements
+    function MainApp() {
+      const [currentPath, setCurrentPath] = useState('C:/');
+      const [pathInput, setPathInput] = useState('C:/');
+      const [fs, setFs] = useState(() => {
+        const saved = localStorage.getItem('standalone_fs');
+        return saved ? JSON.parse(saved) : INITIAL_FS;
+      });
+      
+      const [viewMode, setViewMode] = useState('list');
+      const [sortBy, setSortBy] = useState('name');
+      const [sortDirection, setSortDirection] = useState('asc');
+      const [selectedNames, setSelectedNames] = useState(new Set());
+      const [sidebarOpen, setSidebarOpen] = useState(false);
+      const [isCreatingFile, setIsCreatingFile] = useState(false);
+      const [newFileName, setNewFileName] = useState('');
+      const newFileInputRef = useRef(null);
+
+      // Search and view states
+      const [searchQuery, setSearchQuery] = useState('');
+      const [showHidden, setShowHidden] = useState(false);
+      const [showExtensions, setShowExtensions] = useState(true);
+
+      // Modal states (Editor and Option Settings panel)
+      const [openEditor, setOpenEditor] = useState(null); // { name, path, content }
+      const [editorContent, setEditorContent] = useState('');
+      const [openSettings, setOpenSettings] = useState(false);
+
+      useEffect(() => {
+        localStorage.setItem('standalone_fs', JSON.stringify(fs));
+      }, [fs]);
+
+      useEffect(() => {
+        setPathInput(currentPath);
+        setSelectedNames(new Set());
+      }, [currentPath]);
+
+      useEffect(() => {
+        if (isCreatingFile && newFileInputRef.current) {
+          newFileInputRef.current.focus();
+        }
+      }, [isCreatingFile]);
+
+      // List of folder items for current path
+      const currentItems = useMemo(() => {
+        let list = fs[currentPath] || [];
+        if (searchQuery.trim()) {
+          list = list.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
+        }
+        return [...list].sort((a, b) => {
+          if (a.type === 'directory' && b.type !== 'directory') return -1;
+          if (a.type !== 'directory' && b.type === 'directory') return 1;
+
+          let compare = 0;
+          if (sortBy === 'name') {
+            compare = a.name.localeCompare(b.name);
+          } else if (sortBy === 'date') {
+            compare = a.date.localeCompare(b.date);
+          } else if (sortBy === 'size') {
+            compare = (a.size || 0) - (b.size || 0);
+          }
+          return sortDirection === 'asc' ? compare : -compare;
+        });
+      }, [fs, currentPath, searchQuery, sortBy, sortDirection]);
+
+      const handleUp = () => {
+        if (currentPath === 'REGISTRY:/' || currentPath === 'C:/') return;
+        const parts = currentPath.split('/');
+        if (parts[parts.length - 1] === '') parts.pop();
+        parts.pop();
+        let newPath = parts.join('/');
+        if (newPath === 'REGISTRY:') newPath = 'REGISTRY:/';
+        if (newPath === 'C:') newPath = 'C:/';
+        setCurrentPath(newPath);
+      };
+
+      const handleOpen = (item) => {
+        if (item.type === 'directory') {
+          // If the directory doesn't exist in our map yet, initialize it
+          if (!fs[item.path]) {
+            setFs(prev => ({ ...prev, [item.path]: [] }));
+          }
+          setCurrentPath(item.path);
+        } else {
+          // Open file in Editor
+          setOpenEditor(item);
+          setEditorContent(item.content || '');
+        }
+      };
+
+      const handleSaveEditor = () => {
+        if (!openEditor) return;
+        const updatedItem = { ...openEditor, content: editorContent, size: editorContent.length };
+        setFs(prev => {
+          const parent = prev[currentPath] || [];
+          const updatedParent = parent.map(item => item.name === openEditor.name ? updatedItem : item);
+          return {
+            ...prev,
+            [currentPath]: updatedParent
+          };
+        });
+        setOpenEditor(null);
+      };
+
+      const toggleSelection = (name, multi = false) => {
+        setSelectedNames(prev => {
+          const next = multi ? new Set(prev) : new Set();
+          if (next.has(name)) next.delete(name);
+          else next.add(name);
+          return next;
+        });
+      };
+
+      const toggleSelectAll = () => {
+        if (selectedNames.size === currentItems.length && currentItems.length > 0) {
+          setSelectedNames(new Set());
+        } else {
+          setSelectedNames(new Set(currentItems.map(i => i.name)));
+        }
+      };
+
+      const handleCreateItem = (type) => {
+        if (!newFileName.trim()) {
+          setIsCreatingFile(false);
+          return;
+        }
+
+        const name = newFileName.trim();
+        const fullPath = currentPath.endsWith('/') ? `${currentPath}${name}` : `${currentPath}/${name}`;
+        
+        const newItem = {
+          name,
+          type,
+          path: fullPath,
+          size: type === 'directory' ? 0 : 12,
+          date: new Date().toISOString(),
+          content: type === 'directory' ? undefined : `// Created: ${name}`
+        };
+
+        setFs(prev => {
+          const updatedCurrent = [...(prev[currentPath] || []), newItem];
+          const updatedFs = {
+            ...prev,
+            [currentPath]: updatedCurrent
+          };
+          if (type === 'directory') {
+            updatedFs[fullPath] = [];
+          }
+          return updatedFs;
+        });
+
+        setNewFileName('');
+        setIsCreatingFile(false);
+      };
+
+      const handleDeleteSelected = () => {
+        if (selectedNames.size === 0) return;
+        setFs(prev => {
+          const updatedCurrent = (prev[currentPath] || []).filter(item => !selectedNames.has(item.name));
+          return {
+            ...prev,
+            [currentPath]: updatedCurrent
+          };
+        });
+        setSelectedNames(new Set());
+      };
+
+      return (
+        <div className="flex flex-col h-full w-full bg-[#111111] overflow-hidden">
+          
+          {/* Main Workspace Panels */}
+          <div className="flex-1 flex overflow-hidden relative">
+            
+            {/* Mobile Sidebar Overlay */}
+            {sidebarOpen && (
+              <div className="absolute inset-0 bg-black/60 z-30 md:hidden transition-opacity" onClick={() => setSidebarOpen(false)} />
+            )}
+
+            {/* Navigation Pane (Sidebar) */}
+            <div className={cn(
+              "w-64 border-r border-[#202020] bg-[#1a1a1a] flex flex-col pt-4 overflow-y-auto hide-scrollbar z-40 absolute inset-y-0 left-0 transition-transform duration-200 md:relative md:translate-x-0 md:flex md:w-56 lg:w-64",
+              sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            )}>
+              <div className="px-6 mb-6">
+                <div className="text-[11px] font-bold tracking-widest text-[#878787] uppercase mb-2">Workspace Locations</div>
+                <div 
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 text-[13px] rounded-md transition-colors cursor-pointer", 
+                    currentPath.startsWith('REGISTRY:/') ? "bg-[#252526] text-[#60cdff]" : "text-[#cccccc] hover:bg-white/5"
+                  )} 
+                  onClick={() => { setCurrentPath('REGISTRY:/'); setSidebarOpen(false); }}
+                >
+                  <Icons.Settings size={16} className={currentPath.startsWith('REGISTRY:/') ? 'text-[#60cdff]' : 'text-white/40'} />
+                  <span className="font-medium">VVirtual REGISTRY</span>
+                </div>
+                <div 
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 text-[13px] rounded-md transition-colors cursor-pointer mt-1", 
+                    currentPath.startsWith('C:/') ? "bg-[#252526] text-[#60cdff]" : "text-[#cccccc] hover:bg-white/5"
+                  )} 
+                  onClick={() => { setCurrentPath('C:/'); setSidebarOpen(false); }}
+                >
+                  <Icons.HardDrive size={16} className={currentPath.startsWith('C:/') ? 'text-[#60cdff]' : 'text-white/40'} />
+                  <span className="font-medium">C: (Local FS)</span>
+                </div>
+              </div>
+
+              {/* Side Pane Quick Settings conforming to User's customized panel layout! */}
+              <div className="mt-auto border-t border-[#202020] p-4 bg-[#181818]/60">
+                <div className="text-[11px] font-bold text-[#878787] uppercase tracking-wider mb-2 px-2">Quick Settings</div>
+                
+                <div className="flex items-center justify-between px-2 py-1.5 text-[12px] text-gray-300 hover:bg-white/5 rounded-md cursor-pointer mb-1" onClick={() => setShowHidden(!showHidden)}>
+                  <span>Show hidden files</span>
+                  <WinToggle checked={showHidden} onChange={() => setShowHidden(!showHidden)} />
+                </div>
+                
+                <div className="flex items-center justify-between px-2 py-1.5 text-[12px] text-gray-300 hover:bg-white/5 rounded-md cursor-pointer" onClick={() => setShowExtensions(!showExtensions)}>
+                  <span>Show extensions</span>
+                  <WinToggle checked={showExtensions} onChange={() => setShowExtensions(!showExtensions)} />
+                </div>
+              </div>
+            </div>
+
+            {/* Core Application Frame */}
+            <div className="flex-1 flex flex-col min-w-0 bg-[#1e1e1e] relative">
+              
+              {/* Top Header / Standard Native Address Bar */}
+              <div className="flex items-center gap-2 h-14 bg-[#212121] px-3 shrink-0 border-b border-[#111111]/80 z-20 shadow-md">
+                <div className="flex items-center gap-1 text-white/70">
+                  <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-white/10 rounded-md md:hidden cursor-pointer" title="Toggle navigation pane">
+                    <Icons.PanelLeft size={16} />
+                  </button>
+                  <button onClick={handleUp} className="p-2 hover:bg-white/10 rounded-md disabled:opacity-30 cursor-pointer" disabled={currentPath === 'REGISTRY:/' || currentPath === 'C:/'} title="Up one folder">
+                    <Icons.ArrowUp size={16} />
+                  </button>
+                  <button onClick={() => alert("Simulated Refresh completed.")} className="p-2 hover:bg-white/10 rounded-md hidden sm:block cursor-pointer" title="Refresh">
+                    <Icons.RotateCw size={16} />
+                  </button>
+                </div>
+                
+                {/* Simulated dynamic Address Input Field */}
+                <div className="flex-1 min-w-0 relative">
+                  <input 
+                    type="text" 
+                    value={pathInput}
+                    onChange={(e) => setPathInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        if (fs[pathInput]) {
+                          setCurrentPath(pathInput);
+                        } else {
+                          alert(`Folder "${pathInput}" does not exist in standalone environment.`);
+                          setPathInput(currentPath);
+                        }
+                      }
+                    }}
+                    className="w-full text-[13px] bg-[#1a1a1a] border border-[#2b2b2b] focus:border-[#005fb8] rounded-md h-[34px] pl-3 pr-8 text-white/95 focus:outline-none"
+                  />
+                  <div className="absolute right-2.5 top-2.5 flex items-center pr-1 pointer-events-none">
+                    <span className="text-[10px] text-white/30 uppercase font-bold tracking-wider">MOCK</span>
+                  </div>
+                </div>
+                
+                {/* Interactive Search Bar */}
+                <div className="w-36 sm:w-48 lg:w-64 relative hidden sm:block">
+                  <span className="absolute left-2.5 top-2.5 text-white/30">
+                    <Icons.Search size={14} />
+                  </span>
+                  <input 
+                    type="text" 
+                    placeholder="Search folder content..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full text-[12px] bg-[#181818] border border-[#2b2b2b] rounded-md h-[34px] pl-8 pr-3 text-white focus:outline-none"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-2.5 text-white/40 hover:text-white cursor-pointer">
+                      <Icons.X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Top Command Ribbon (Responsive setup, label toggling on mobile) */}
+              <div className="flex items-center h-12 bg-[#1c1c1c] px-3 shrink-0 border-b border-[#111111]/40 text-[13px] gap-1 z-10 overflow-x-auto hide-scrollbar whitespace-nowrap">
+                <button className="flex items-center gap-2 hover:bg-white/10 px-3 py-1.5 rounded-md shrink-0 cursor-pointer text-white" onClick={() => setIsCreatingFile(true)}>
+                  <Icons.Plus size={16} className="text-[#60cdff]" />
+                  <span className="hidden sm:inline">New</span>
+                </button>
+                <button className="p-2 hover:bg-white/10 rounded-md text-white/80 shrink-0 cursor-pointer" onClick={toggleSelectAll} title="Select All">
+                  <Icons.CheckSquare size={16} />
+                </button>
+                <div className="w-[1px] h-5 bg-white/10 mx-1 shrink-0"></div>
+                <button className="p-2 hover:bg-white/10 rounded-md text-white/80 shrink-0 cursor-pointer" onClick={() => alert("Simulated Cut successful.")} title="Cut"><Icons.Scissors size={16} /></button>
+                <button className="p-2 hover:bg-white/10 rounded-md text-white/80 shrink-0 cursor-pointer" onClick={() => alert("Simulated Copy successful.")} title="Copy"><Icons.Copy size={16} /></button>
+                <button className="p-2 hover:bg-white/10 rounded-md text-white/80 shrink-0 cursor-pointer" onClick={() => alert("Simulated Paste applied.")} title="Paste"><Icons.ClipboardPaste size={16} /></button>
+                <button className="p-2 hover:bg-white/10 rounded-md text-white/80 shrink-0 cursor-pointer" onClick={() => {
+                  const items = Array.from(selectedNames);
+                  if (items.length !== 1) return alert("Select exactly 1 item to rename.");
+                  const newName = prompt("Enter new name:", items[0]);
+                  if (newName) {
+                    setFs(prev => {
+                      const updated = prev[currentPath].map(item => item.name === items[0] ? { ...item, name: newName, path: `${currentPath}/${newName}` } : item);
+                      return { ...prev, [currentPath]: updated };
+                    });
+                    setSelectedNames(new Set());
+                  }
+                }} title="Rename"><Icons.Type size={16} /></button>
+                <button className="p-2 hover:bg-white/10 rounded-md text-white/80 shrink-0 cursor-pointer" onClick={handleDeleteSelected} disabled={selectedNames.size === 0} title="Delete"><Icons.Trash2 size={16} className={selectedNames.size > 0 ? "text-red-400" : "opacity-30"} /></button>
+                
+                <div className="w-[1px] h-5 bg-white/10 mx-1 shrink-0"></div>
+                <button className="flex items-center gap-1.5 hover:bg-white/10 px-2 py-1.5 rounded-md text-white/80 shrink-0 cursor-pointer" onClick={() => setSortDirection(s => s === 'asc' ? 'desc' : 'asc')}>
+                  <Icons.ArrowUpDown size={14} /> <span className="hidden sm:inline">Sort {sortDirection === 'asc' ? '▲' : '▼'}</span>
+                </button>
+                <button className="flex items-center gap-1.5 hover:bg-white/10 px-2 py-1.5 rounded-md text-white/80 shrink-0 cursor-pointer" onClick={() => setViewMode(v => v === 'list' ? 'grid' : 'list')}>
+                  <Icons.LayoutGrid size={14} /> <span className="hidden sm:inline">View: {viewMode === 'list' ? 'List' : 'Grid'}</span>
+                </button>
+                
+                {/* Files Options Gear trigger */}
+                <button className="p-2 hover:bg-white/10 rounded-md text-white/80 shrink-0 cursor-pointer ml-auto" onClick={() => setOpenSettings(true)} title="Files settings">
+                  <Icons.Settings size={16} />
+                </button>
+              </div>
+
+              {/* Main File list & workspace directory representation */}
+              <div className="flex-1 overflow-y-auto p-4 content-start">
+                
+                {/* Simulated input for new file/folder creation */}
+                {isCreatingFile && (
+                  <div className="bg-[#242424] p-3 rounded-md border border-[#3b3b3b] mb-4 flex gap-2 items-center max-w-sm animate-fade-in">
+                    <input 
+                      ref={newFileInputRef}
+                      type="text" 
+                      placeholder="Name (e.g. index.html or scripts)"
+                      value={newFileName}
+                      onChange={(e) => setNewFileName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleCreateItem('file');
+                        if (e.key === 'Escape') setIsCreatingFile(false);
+                      }}
+                      className="bg-[#111111] border border-[#2b2b2b] text-white text-[13px] px-2 py-1 focus:outline-none rounded-md flex-1"
+                    />
+                    <div className="flex gap-1.5 shrink-0">
+                      <button onClick={() => handleCreateItem('directory')} className="px-2 py-1 text-[11px] bg-[#005fb8] text-white rounded-md cursor-pointer hover:bg-[#005fb8]/80 font-medium">Folder</button>
+                      <button onClick={() => handleCreateItem('file')} className="px-2 py-1 text-[11px] bg-[#333333] text-white rounded-md cursor-pointer hover:bg-white/10 font-medium">File</button>
+                      <button onClick={() => setIsCreatingFile(false)} className="px-2 py-1 text-[11px] text-white/60 hover:text-white cursor-pointer font-medium">Cancel</button>
+                    </div>
+                  </div>
+                )}
+
+                {currentItems.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-20 text-[#878787]">
+                    <Icons.Folder size={48} className="stroke-1 mb-2 opacity-30 text-[#878787]" />
+                    <span className="text-[13px]">This folder is empty.</span>
+                    <button onClick={() => setIsCreatingFile(true)} className="mt-4 text-[12px] text-[#60cdff] hover:underline cursor-pointer">Create new item</button>
+                  </div>
+                )}
+
+                {/* Switchable List / Grid layouts */}
+                {viewMode === 'list' ? (
+                  /* Standard List layout view */
+                  <div className="w-full text-[13px] min-w-[500px] overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="text-[#878787] border-b border-[#2b2b2b] text-[12px]">
+                          <th className="py-2 px-3 focus:outline-none w-10">Select</th>
+                          <th className="py-2 px-2 select-none cursor-pointer hover:text-white" onClick={() => setSortBy('name')}>Name</th>
+                          <th className="py-2 px-2 select-none cursor-pointer hover:text-white" onClick={() => setSortBy('date')}>Date Modified</th>
+                          <th className="py-2 px-2 select-none cursor-pointer hover:text-white" onClick={() => setSortBy('size')}>Size</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentItems.map((item) => {
+                          const isSelected = selectedNames.has(item.name);
+                          const isFolder = item.type === 'directory';
+                          const displayName = showExtensions || isFolder ? item.name : item.name.replace(/\.[^/.]+$/, "");
+                          
+                          return (
+                            <tr 
+                              key={item.name} 
+                              className={cn(
+                                "border-b border-[#1f1f1f]/50 hover:bg-white/5 cursor-pointer selection:bg-transparent", 
+                                isSelected ? "bg-white/5 bg-opacity-70 text-white" : "text-white/80"
+                              )} 
+                              onDoubleClick={() => handleOpen(item)}
+                              onClick={(e) => {
+                                if (e.shiftKey) {
+                                  toggleSelection(item.name, true);
+                                } else {
+                                  toggleSelection(item.name, false);
+                                }
+                              }}
+                            >
+                              <td className="py-2.5 px-3">
+                                <input 
+                                  type="checkbox" 
+                                  checked={isSelected}
+                                  onChange={() => toggleSelection(item.name, true)}
+                                  className="w-4 h-4 accent-[#005fb8] rounded-sm cursor-pointer"
+                                />
+                              </td>
+                              <td className="py-2.5 px-2 flex items-center gap-2 py-3 font-medium">
+                                {isFolder ? (
+                                  <Icons.Folder className="text-[#60cdff] shrink-0" size={16} />
+                                ) : (
+                                  <Icons.File className="text-white/40 shrink-0" size={16} />
+                                )}
+                                <span>{displayName}</span>
+                              </td>
+                              <td className="py-2.5 px-2 text-white/50">{new Date(item.date).toLocaleDateString()}</td>
+                              <td className="py-2.5 px-2 text-white/50">{isFolder ? '--' : formatSize(item.size)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  /* Modern Grid layout view (Responsive Bento-Style) */
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+                    {currentItems.map((item) => {
+                      const isSelected = selectedNames.has(item.name);
+                      const isFolder = item.type === 'directory';
+                      const displayName = showExtensions || isFolder ? item.name : item.name.replace(/\.[^/.]+$/, "");
+
+                      return (
+                        <div 
+                          key={item.name}
+                          className={cn(
+                            "p-3 rounded-lg flex flex-col items-center justify-center text-center transition-all cursor-pointer border border-transparent select-none relative group",
+                            isSelected ? "bg-[#2a2a2a] border-[#3b3b3b] shadow-md text-white" : "hover:bg-white/5 text-white/80"
+                          )}
+                          onDoubleClick={() => handleOpen(item)}
+                          onClick={(e) => {
+                            if (e.shiftKey) {
+                              toggleSelection(item.name, true);
+                            } else {
+                              toggleSelection(item.name);
+                            }
+                          }}
+                        >
+                          <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                            <input 
+                              type="checkbox" 
+                              checked={isSelected}
+                              onChange={() => toggleSelection(item.name, true)}
+                              className="w-4 h-4 accent-[#005fb8] cursor-pointer"
+                            />
+                          </div>
+                          
+                          <div className="mb-2">
+                            {isFolder ? (
+                              <Icons.Folder className="text-[#60cdff] w-12 h-12" size={48} />
+                            ) : (
+                              <Icons.File className="text-white/40 w-12 h-12" size={48} />
+                            )}
+                          </div>
+                          
+                          <div className="text-[12px] font-medium truncate w-full px-1">{displayName}</div>
+                          <div className="text-[10px] text-white/40 mt-0.5">{isFolder ? 'Folder' : formatSize(item.size)}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+              </div>
+
+              {/* Responsive App bottom bar status count */}
+              <div className="h-7 border-t border-[#202020] bg-[#1a1a1a] px-3 shrink-0 flex items-center justify-between text-[11px] text-[#878787] select-none">
+                <div>
+                  <span>{currentItems.length} items</span>
+                  {selectedNames.size > 0 && <span className="ml-3 text-[#60cdff]">{selectedNames.size} items selected</span>}
+                </div>
+                <div className="hidden sm:block">
+                  <span>Simulated Environment</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* Standalone Text Editor Dialog Overlay */}
+          {openEditor && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+              <div className="bg-[#111111] border border-[#2b2b2b] rounded-lg shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-slide-in">
+                <div className="h-12 bg-[#202020] px-4 flex items-center justify-between text-white border-b border-[#2b2b2b]">
+                  <div className="flex items-center gap-2">
+                    <Icons.File size={16} className="text-[#60cdff]" />
+                    <span className="text-[13px] font-medium font-sans truncate">{openEditor.name}</span>
+                  </div>
+                  <button onClick={() => setOpenEditor(null)} className="p-1 hover:bg-white/10 rounded-full text-white/70 hover:text-white cursor-pointer">
+                    <Icons.X size={16} />
+                  </button>
+                </div>
+                <div className="flex-1 p-3 flex flex-col bg-[#1e1e1e]">
+                  <textarea 
+                    value={editorContent}
+                    onChange={(e) => setEditorContent(e.target.value)}
+                    className="flex-1 w-full bg-[#111111] text-[#cccccc] font-mono p-4 rounded-sm border border-[#2b2b2b] text-[13px] focus:outline-none focus:border-[#005fb8] resize-none"
+                    spellCheck="false"
+                  />
+                </div>
+                <div className="h-14 bg-[#202020] px-4 gap-2 flex items-center justify-end border-t border-[#2b2b2b]">
+                  <button onClick={() => setOpenEditor(null)} className="px-4 py-1.5 text-[12px] bg-white/5 hover:bg-white/10 transition-colors text-white font-medium rounded-md cursor-pointer">Cancel</button>
+                  <button onClick={handleSaveEditor} className="px-5 py-1.5 text-[12px] bg-[#005fb8] hover:bg-[#005fb8]/80 transition-colors text-white font-semibold rounded-md cursor-pointer flex items-center gap-1.5">
+                    <Icons.Save size={14} />
+                    <span>Save Changes</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Standalone Settings Dialog Page/Overlay */}
+          {openSettings && (
+            <div className="fixed inset-0 flex items-center justify-center z-50 animate-fade-in">
+              <div className="flex flex-col text-[#CCCCCC] font-sans selection:bg-blue-500/30 w-full h-full overflow-y-auto hide-scrollbar bg-[#111111] p-6 absolute inset-0">
+                <div className="max-w-[800px] w-full mx-auto pb-12">
+                  <div className="flex items-center gap-4 mb-6">
+                    <button onClick={() => setOpenSettings(false)} className="p-2 hover:bg-white/10 rounded-full cursor-pointer">
+                      <Icons.ArrowLeft size={18} className="text-white" />
+                    </button>
+                    <h1 className="text-lg font-medium text-white">Settings</h1>
+                  </div>
+                  
+                  <div className="mb-8 block">
+                    <SettingsCard title="Show drive letters" description="Display drive letters (e.g. C:) in the navigation pane.">
+                      <WinToggle checked={true} onChange={() => {}} />
+                    </SettingsCard>
+
+                    <SettingsCard title="Show encrypted or compressed files in color">
+                      <WinToggle checked={false} onChange={() => {}} />
+                    </SettingsCard>
+                    
+                    <SettingsCard title="Show pop-up description for folder and desktop items">
+                      <WinToggle checked={true} onChange={() => {}} />
+                    </SettingsCard>
+                    
+                    <SettingsCard title="Show file preview handlers in preview pane" description="Previews contents of supported files without opening them.">
+                      <WinToggle checked={true} onChange={() => {}} />
+                    </SettingsCard>
+                    
+                    <SettingsCard title="Show status bar" description="Displays item count and selection summary at the bottom.">
+                      <WinToggle checked={true} onChange={() => {}} />
+                    </SettingsCard>
+                    
+                    <SettingsCard title="Use check boxes to select items" description="Allows selecting multiple items by clicking checkboxes next to them.">
+                      <WinToggle checked={true} onChange={() => {}} />
+                    </SettingsCard>
+                  </div>
+
+                  <div className="mb-8">
+                    <h2 className="text-[14px] font-medium text-white/80 mb-2 px-1">When typing into list view</h2>
+                    <div className="bg-[#202020] p-4 rounded-sm flex flex-col gap-3">
+                       <label className="flex items-center gap-3 cursor-pointer">
+                         <div className="w-4 h-4 rounded-full border border-white/50 flex items-center justify-center shrink-0">
+                           {/* Simulated Select */}
+                         </div>
+                         <span className="text-[14px]">Automatically type into the Search Box</span>
+                       </label>
+                       <label className="flex items-center gap-3 cursor-pointer">
+                         <div className="w-4 h-4 rounded-full border border-[#005fb8] flex items-center justify-center shrink-0">
+                           <div className="w-2 h-2 rounded-full bg-[#005fb8]" />
+                         </div>
+                         <span className="text-[14px]">Select the typed item in the view</span>
+                       </label>
+                    </div>
+                  </div>
+
+                  <div className="mb-8">
+                    <h2 className="text-[14px] font-medium text-white/80 mb-2 px-1">Navigation pane</h2>
+                    
+                    <SettingsCard title="Expand to open folder" description="Automatically expand the folder tree to the current folder.">
+                      <WinToggle checked={false} onChange={() => {}} />
+                    </SettingsCard>
+
+                    <SettingsCard title="Show all folders">
+                      <WinToggle checked={false} onChange={() => {}} />
+                    </SettingsCard>
+
+                    <SettingsCard title="Show Network">
+                      <WinToggle checked={true} onChange={() => {}} />
+                    </SettingsCard>
+
+                    <SettingsCard title="Show This PC">
+                      <WinToggle checked={true} onChange={() => {}} />
+                    </SettingsCard>
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-10">
+                     <button className="px-8 py-2 rounded bg-[#005fb8] hover:bg-[#005fb8]/80 text-white border border-white/5 text-[13px] font-semibold transition-colors cursor-pointer" onClick={() => setOpenSettings(false)}>Apply & Done</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<MainApp />);
+  </script>
+
+</body>
+</html>
