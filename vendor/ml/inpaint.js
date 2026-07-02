@@ -20,6 +20,8 @@
 //        maskCanvas = white/opaque where to erase. Returns a NEW canvas.
 // ---------------------------------------------------------------------------
 
+import { gpuAvailable, withGpuFallback } from './gpu-fallback.js';
+
 const ORT_VER = '1.20.1';
 const ORT = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VER}/dist/ort.webgpu.bundle.min.mjs`;
 const MODEL_URL = 'https://huggingface.co/andraniksargsyan/migan/resolve/main/migan_pipeline_v2.onnx';
@@ -27,20 +29,8 @@ const SIZE = 512;      // MI-GAN pipeline runs at a FIXED 512x512
 const PAD = 0.012;     // dilate the mask by ~1.2% so we catch the object's edge/halo
 
 let _ready = null, _busy = false;
-let _forceWasm = (() => { try { return localStorage.getItem('a4q-ml-wasm') === '1'; } catch (_) { return false; } })();
 
 export function inpaintBusy() { return _busy; }
-
-function isGpuError(e) { return /webgpu|gpu|ortrun|bind ?group|validation|createbindgroup|shader|device lost/i.test(String((e && e.message) || e)); }
-async function withWasmFallback(run, onStatus) {
-  try { return await run(); }
-  catch (e) {
-    if (_forceWasm || !isGpuError(e)) throw e;
-    onStatus && onStatus('GPU not supported here — switching to compatibility mode…');
-    _forceWasm = true; try { localStorage.setItem('a4q-ml-wasm', '1'); } catch (_) {} await disposeInpainter();
-    return await run();
-  }
-}
 
 async function fetchWithProgress(url, onStatus) {
   const res = await fetch(url);
@@ -65,7 +55,7 @@ async function ensure(onStatus) {
     const ort = await import(/* @vite-ignore */ ORT);
     ort.env.wasm.wasmPaths = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VER}/dist/`;
     ort.env.wasm.simd = true;
-    const providers = (!_forceWasm && typeof navigator !== 'undefined' && navigator.gpu) ? ['webgpu', 'wasm'] : ['wasm'];
+    const providers = gpuAvailable() ? ['webgpu', 'wasm'] : ['wasm'];
     const buf = await fetchWithProgress(MODEL_URL, onStatus);
     onStatus && onStatus('warming up eraser…');
     const opts = { executionProviders: providers };
@@ -97,7 +87,7 @@ function dilateMask(mask, r) {
 export async function inpaint(imageCanvas, maskCanvas, onStatus) {
   if (_busy) throw new Error('eraser is busy');
   _busy = true;
-  try { return await withWasmFallback(() => _inpaintInfer(imageCanvas, maskCanvas, onStatus), onStatus); }
+  try { return await withGpuFallback(() => _inpaintInfer(imageCanvas, maskCanvas, onStatus), disposeInpainter, onStatus); }
   finally { _busy = false; }
 }
 

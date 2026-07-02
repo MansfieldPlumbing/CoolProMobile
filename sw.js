@@ -17,7 +17,7 @@
         the user's mobile data for no benefit.
    Update flow is explicit: we do NOT skipWaiting on install — the page detects the
    waiting worker and offers "Update", then posts SKIP_WAITING. */
-const VERSION = 'coolpromobile-v13';
+const VERSION = 'coolpromobile-v14';
 const APP_CACHE = VERSION;
 const CDN_CACHE = 'nocap-cdn';      // stable bucket name (NOT version-suffixed): survives app updates
 const SHARE_CACHE = 'coolpro-share'; // transient: Android share-target hand-off, drained on boot
@@ -34,7 +34,7 @@ const SHELL = [
   './src/addons.js', './src/ffmpeg.js',
   // shared, reused-everywhere assets
   './shared/presenter.js',
-  './vendor/ml/segment.js', './vendor/ml/select.js', './vendor/ml/inpaint.js', './vendor/ml/pose.js',
+  './vendor/ml/segment.js', './vendor/ml/select.js', './vendor/ml/inpaint.js', './vendor/ml/pose.js', './vendor/ml/gpu-fallback.js',
   './vendor/anim/skeleton.js', './vendor/anim/rig.js', './vendor/anim/motion.js',
   './vendor/ui/flickpaint-ui.css',
   './vendor/ui/fonts/selawk.ttf', './vendor/ui/fonts/CascadiaCodeNF.ttf',
