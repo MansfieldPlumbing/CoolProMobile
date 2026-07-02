@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="theme-color" content="#0b0c10" />
+  <title>CoolProMobile — the movie studio in your pocket</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%235b8cff'/%3E%3Ctext x='16' y='22' font-size='15' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='700'%3EC%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="app.css" />
+  <script>
+    // theme, applied before paint (no flash): mirrors src/theme-engine.js
+    try { var R = document.documentElement, m = localStorage.getItem('coolpro-mode') || 'dark';
+      if (m === 'auto') m = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      R.dataset.mode = m;
+      if (m === 'light') { var L = {'--bg':'#eef1f6','--surface':'#ffffff','--surface-2':'#e7eaf1','--panel':'#f4f6fa','--border':'#d7dce6','--border-2':'#c2c9d8','--fg':'#1a1d24','--muted':'#5c6474','--faint':'#9aa2b2','--mica-rgb':'255 255 255'}; for (var k in L) R.style.setProperty(k, L[k]); }
+      var a = localStorage.getItem('coolpro-accent'); if (a) R.style.setProperty('--accent', a);
+      R.dataset.mica = (localStorage.getItem('coolpro-mica') === 'off') ? 'off' : 'on';
+      var o = localStorage.getItem('coolpro-opacity'); if (o) R.style.setProperty('--transparency', o);
+    } catch (e) {}
+  </script>
+</head>
+<body data-app="editor">
+  <!-- ═══════════════════════ the Shell ═══════════════════════
+       Chrome that projects the namespace. Holds no document truth: it mounts the active
+       presenter into the stage and presents its verbs. (subsystem Shell.js, ported.) -->
+  <div id="shell">
+    <!-- The app switcher used to live in a top shell-bar; the taskbar (below) is now the single nav.
+         No top chrome — the stage is full-bleed, the dock owns switching. -->
+    <div id="stage" class="stage-host">
+      <!-- ── launcher: the front door (phone-first — arrive at a chooser, not a surface) ── -->
+      <section id="surface-home" class="surface">
+        <div class="nv-root">
+          <div class="nv-head"><h1>Cool<span class="no">Pro</span><span class="mobile-tag">Mobile</span></h1>
+            <p class="nv-tag">The movie studio in your pocket — <span class="no">no cap</span>. Audio · video · image · 3D, on-device.</p></div>
+          <div id="navCrumbs" class="nv-crumbs"></div>
+          <div id="navHost" class="nv-host"></div>
+        </div>
+      </section>
+
+      <!-- ── native surface: the CapCut-style A/V editor ── -->
+      <section id="surface-editor" class="surface" hidden>
+        <div id="app">
+          <!-- editor command deck (flickpaint-shaped): a slim acrylic strip — same frosted glass as
+               the dock + paint panes. Project name + the two primary verbs (Save · Export), with a ⋯
+               overflow that opens the homespun context menu for the rest (Add tracks · Add-ons ·
+               Install). Retires the obp ribbon + hamburger sheet — the chrome that read as disjointed. -->
+          <header class="ed-deck acrylic">
+            <input id="projName" class="proj-name" value="Untitled project" spellcheck="false" />
+            <div class="spacer"></div>
+            <!-- projections (Blackmagic Resolve pages): one project, several rooms. Each rearranges the
+                 same panes — Edit (timeline up) · Wide (no side panels) · Preview (timeline down to a
+                 grip, the preview takes the whole pasteboard). -->
+            <div id="edProj" class="proj-switch" role="tablist" aria-label="Projection">
+              <button data-proj="edit" class="on">Edit</button>
+              <button data-proj="wide">Wide</button>
+              <button data-proj="preview">Preview</button>
+            </div>
+            <div class="spacer"></div>
+            <button id="btnSave" class="ribbon-btn icon" title="Save project to browser storage"><span class="nf">&#xf0c7;</span></button>
+            <button id="btnExport" class="ribbon-btn primary" title="Export"><span class="nf">&#xf019;</span><span class="lbl">Export</span></button>
+            <button id="edMore" class="ribbon-btn icon" title="More" aria-haspopup="true"><span class="nf">&#xf142;</span></button>
+            <!-- kept (hidden) so addons.js / pwa.js keep their wiring; the ⋯ menu proxy-clicks them -->
+            <button id="btnAddons" hidden></button>
+            <button id="btnInstall" hidden></button>
+          </header>
+
+          <!-- left: media bin -->
+          <aside class="side left">
+            <h3>Media</h3>
+            <div class="scroll">
+              <div id="dropzone" class="dropzone">＋ Tap to add media<br /><small>or drop video / audio / images</small></div>
+              <div id="bin" class="bin"></div>
+              <div id="binEmpty" class="empty">Your media bin is empty.</div>
+            </div>
+            <input id="filePicker" type="file" accept="video/*,audio/*,image/*" multiple hidden />
+          </aside>
+
+          <!-- center: preview — reuses flickpaint's pasteboard (infinite checker + framed artboard).
+               The canvas is the artboard; #previewStage is the pan/zoom transform host. -->
+          <main class="stage">
+            <div class="viewport pasteboard">
+              <div id="previewStage" class="preview-stage"><canvas id="preview" width="1280" height="720"></canvas></div>
+              <div class="pv-zoom">
+                <button id="pvZoomOut" title="Zoom out">－</button>
+                <button id="pvZoomFit" title="Fit to view">⊡</button>
+                <button id="pvZoomIn" title="Zoom in">＋</button>
+              </div>
+            </div>
+            <div class="transport">
+              <div class="time"><b id="tCur">0:00.00</b> / <span id="tDur">0:00.00</span></div>
+              <button id="btnToStart" class="tbtn" title="To start">⏮</button>
+              <button id="btnPlay" class="tbtn play" title="Play / Pause (Space)">▶</button>
+              <button id="btnToEnd" class="tbtn" title="To end">⏭</button>
+              <div class="spacer"></div>
+              <button id="btnSplit" class="btn ghost" title="Split clip at playhead (S)"><span class="nf">&#xf0c4;</span> Split</button>
+              <button id="btnDelete" class="btn ghost" title="Delete selected clip (Del)"><span class="nf">&#xf1f8;</span> Delete</button>
+            </div>
+          </main>
+
+          <!-- right: FX / properties -->
+          <aside class="side right">
+            <div class="tabs">
+              <div class="tab active" data-tab="props">Clip</div>
+              <div class="tab" data-tab="afx">Audio FX</div>
+              <div class="tab" data-tab="vfx">Video FX</div>
+              <div class="tab" data-tab="ai">AI</div>
+            </div>
+            <div class="scroll">
+              <div class="tabpane" data-pane="props"></div>
+              <div class="tabpane" data-pane="afx" hidden></div>
+              <div class="tabpane" data-pane="vfx" hidden></div>
+              <div class="tabpane" data-pane="ai" hidden></div>
+            </div>
+          </aside>
+
+          <!-- bottom: timeline — a bring-up pane. The grip is the always-visible handle (flickpaint
+               bottom-tab): tap it to drop the timeline to a strip (Preview) or bring it back (Edit). -->
+          <section class="timeline">
+            <button class="tl-grip" id="tlGrip" title="Bring the timeline up / down" aria-label="Toggle timeline"><span class="tl-grip-bar"></span></button>
+            <div class="tl-toolbar">
+              <button id="btnAddVideoTrack" class="btn ghost" title="Add video track">＋ Video track</button>
+              <button id="btnAddAudioTrack" class="btn ghost" title="Add audio track">＋ Audio track</button>
+              <div class="spacer"></div>
+              <div class="tl-zoom">
+                <span>Zoom</span>
+                <input id="tlZoom" type="range" min="20" max="400" value="90" />
+              </div>
+            </div>
+            <div class="tl-body">
+              <div class="tl-headers" id="tlHeaders"><div class="tl-headers-inner" id="tlHeadersInner"></div></div>
+              <div class="tl-scroll" id="tlScroll">
+                <div class="tl-canvas-wrap" id="tlWrap">
+                  <canvas id="tl-canvas"></canvas>
+                  <div id="tl-playhead"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- status bar (obp) — selection on the left, project facts on the right -->
+          <footer class="ed-status">
+            <div id="stLeft" class="st-left">Ready</div>
+            <div class="st-right">
+              <span id="stRes" class="nf-mono">1280×720</span>
+              <span id="stFps" class="nf-mono">30 fps</span>
+              <span id="stClips" class="nf-mono">0 clips</span>
+            </div>
+          </footer>
+        </div>
+      </section>
+
+      <!-- ── guest surfaces: paint & 3D mount here as hosted iframes ── -->
+      <div id="stage-guests" class="surface" hidden></div>
+    </div>
+
+    <!-- ── taskbar: the multitasking dock (phone-first, thumb reach). Always visible; chips are the
+         studio's surfaces, a live dot marks the warm ones. Wears .acrylic — flickpaint's frosted
+         glass, one shared material, one cohesion knob. (subsystem Taskbar, ported.) ── -->
+    <nav id="taskbar" class="taskbar acrylic" aria-label="Open surfaces"></nav>
+  </div>
+
+  <div id="hud"></div>
+
+  <script type="module" src="src/app.js"></script>
+  <script type="module">
+    import { initThemeEngine } from './src/theme-engine.js';
+    import { initShell } from './src/shell.js';
+    import { initShare } from './src/share.js';
+    import { initTaskbar } from './src/taskbar.js';
+    function boot() { initThemeEngine(); initTaskbar(); initShell(); initShare(); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  </script>
+</body>
+</html>

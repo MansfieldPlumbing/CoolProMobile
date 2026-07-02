@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>flickmotion — CoolPro</title>
+
+<!-- Shared hand-made glass chrome — the same flickpaint shell paint & 3D wear. -->
+<link rel="stylesheet" href="../../vendor/ui/flickpaint-ui.css">
+<style>
+  /* animate-only bits the shared chrome doesn't define */
+  body { background: radial-gradient(120% 90% at 50% 0%, #1c1c1f 0%, #141416 55%, #101012 100%); }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) body { background: radial-gradient(120% 90% at 50% 0%, #eceef2 0%, #f1f3f6 55%, #f6f7fa 100%); }
+  }
+  :root[data-theme="light"] body { background: radial-gradient(120% 90% at 50% 0%, #eceef2 0%, #f1f3f6 55%, #f6f7fa 100%); }
+  /* keep the shared chrome's absolute-inset #viewport (overriding position collapses it to 0-height);
+     it's a positioned ancestor already, so the #bones overlay anchors to it fine */
+  #viewport { cursor: default; transition: filter .45s ease; }
+  body[data-view="left"]   #viewport,
+  body[data-view="right"]  #viewport,
+  body[data-view="bottom"] #viewport { filter: brightness(.7); }
+  #status {
+    position: absolute; top: 84px; left: 50%; transform: translateX(-50%); z-index: 36;
+    padding: 6px 14px; border-radius: 999px; font-size: 11px; color: rgba(var(--fg-rgb), 0.72);
+    max-width: 72vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+  }
+  .deck .brand-mini { font-weight: 800; letter-spacing: .3px; }
+
+  /* joint fix-up overlay (the AnimatedDrawings "fix the joints" step) */
+  #bones { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
+  .joint {
+    position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%;
+    background: rgba(91,140,255,.28); border: 2px solid #5b8cff; box-shadow: 0 0 0 2px rgba(0,0,0,.35);
+    z-index: 22; cursor: grab; touch-action: none;
+  }
+  .joint:active { cursor: grabbing; background: rgba(91,140,255,.55); }
+  .joint::after {
+    content: attr(data-name); position: absolute; left: 20px; top: -2px; font-size: 9px;
+    color: rgba(var(--fg-rgb), .75); white-space: nowrap; pointer-events: none; opacity: 0;
+    transition: opacity .15s;
+  }
+  .joint:hover::after, .joint:active::after { opacity: 1; }
+
+  /* mocap camera pip */
+  #pip {
+    position: absolute; right: 14px; top: 84px; width: 148px; border-radius: 12px; z-index: 30;
+    transform: scaleX(-1); border: 1px solid var(--line); background: #000; display: none;
+  }
+  body[data-mocap="on"] #pip { display: block; }
+
+  /* motion preset grid */
+  .motions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .motions .gridbtn { padding: 10px 4px; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+  .motions .gridbtn .mi { font-size: 20px; line-height: 1; }
+  .motions .gridbtn.active { outline: 2px solid var(--indigo-2); }
+
+  .xrow { display: flex; gap: 8px; margin-bottom: 10px; }
+  .xrow .btn-soft { flex: 1; }
+  .rec-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #ff3b5c; margin-right: 6px; vertical-align: 1px; }
+</style>
+</head>
+<body data-view="center">
+
+<div id="root">
+  <div id="viewport">
+    <div id="bones"></div>
+  </div>
+  <video id="pip" muted playsinline></video>
+  <div id="dismiss"></div>
+
+  <!-- Edge-grip tabs (mobile) -->
+  <div class="tabs">
+    <div class="tab left mica-panel" data-toggle="left" title="Character">
+      <span class="ic"><svg viewBox="0 0 24 24"><rect x="11" y="6" width="2" height="12" rx="1" fill="currentColor"/></svg></span>
+    </div>
+    <div class="tab right mica-panel" data-toggle="right" title="Motion">
+      <span class="ic"><svg viewBox="0 0 24 24"><rect x="11" y="6" width="2" height="12" rx="1" fill="currentColor"/></svg></span>
+    </div>
+    <div class="tab bottom mica-panel" data-toggle="bottom" title="Export">
+      <span class="ic"><svg viewBox="0 0 24 24"><rect x="6" y="11" width="12" height="2" rx="1" fill="currentColor"/></svg></span>
+    </div>
+  </div>
+
+  <!-- Top window blind + deck -->
+  <div id="top" class="mica-panel">
+    <div id="blind"><div class="blind-inner">
+      <h2 class="title">flickmotion</h2>
+      <p class="muted" style="font-size:11px;margin-top:8px;line-height:1.5">
+        Open a drawing → it gets a skeleton → make it dance. Fix the joints if the guess is off,
+        pick a motion (or act one out with the camera), then send the clip to the editor.
+      </p>
+    </div></div>
+    <div class="deck" id="deck">
+      <div class="row">
+        <a class="iconbtn" href="../" title="Home">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span>
+        </a>
+      </div>
+      <div class="brand-mini mono">flick<b style="color:var(--indigo-2)">motion</b></div>
+      <div class="row">
+        <button class="iconbtn" id="playToggle" title="Play / pause">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+        </button>
+        <button class="iconbtn" id="stick-toggle" title="Joystick">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg></span>
+        </button>
+      </div>
+    </div>
+    <div class="chev" id="chev" title="Pull down / slide up">
+      <span class="ic"><svg viewBox="0 0 24 24"><rect x="6" y="11" width="12" height="2" rx="1" fill="currentColor"/></svg></span>
+    </div>
+  </div>
+
+  <!-- LEFT: character -->
+  <div class="panel left mica-panel" id="panel-left">
+    <h2 class="title" style="margin-bottom:14px">Character</h2>
+    <button class="btn-soft" id="open" style="width:100%;margin-bottom:10px">📂 Open a drawing / image</button>
+    <input type="file" id="file" accept="image/*" hidden>
+    <button class="btn-soft" id="aicut" title="Cut the subject from any background with AI (for photos)"
+            style="width:100%;margin-bottom:16px">✨ AI cut-out for photos</button>
+    <h3 class="section" style="margin-bottom:8px">Skeleton</h3>
+    <div class="xrow">
+      <button class="btn-soft" id="editJoints">🦴 Fix joints</button>
+      <button class="btn-soft" id="resetJoints">↺ Reset</button>
+    </div>
+    <p class="muted" style="font-size:11px;line-height:1.5;margin-top:8px">
+      Joints are guessed by the pose AI (or a template). Drag the dots onto hips, knees, elbows &
+      hands — the rig re-binds when you let go.
+    </p>
+  </div>
+
+  <!-- RIGHT: motion -->
+  <div class="panel right mica-panel" id="panel-right">
+    <h2 class="title" style="margin-bottom:14px">Motion</h2>
+    <div class="motions" id="motions"></div>
+    <label class="field-label">Speed <span id="speedVal" class="mono" style="float:right;color:#fff">100%</span></label>
+    <input type="range" id="speed" min="25" max="200" value="100" style="width:100%;margin-bottom:16px">
+    <h3 class="section" style="margin-bottom:8px">Motion capture</h3>
+    <div class="xrow">
+      <button class="btn-soft" id="mocapCam">📷 Camera</button>
+      <button class="btn-soft" id="mocapVid">🎞️ From video</button>
+    </div>
+    <input type="file" id="vidFile" accept="video/*" hidden>
+    <button class="btn-soft" id="mocapBake" style="width:100%;margin-bottom:8px" disabled>⏺ Record a clip from the mocap</button>
+    <p class="muted" id="mocapHint" style="font-size:11px;line-height:1.5">
+      Camera: act it out and the character follows live. From video: any clip of a person becomes
+      a reusable motion.
+    </p>
+  </div>
+
+  <!-- BOTTOM: export -->
+  <div class="panel bottom mica-panel" id="panel-bottom">
+    <h2 class="title" style="margin-bottom:12px">Export</h2>
+    <div class="xrow" id="durs">
+      <button class="btn-soft" data-dur="2">2s</button>
+      <button class="btn-soft active" data-dur="4">4s</button>
+      <button class="btn-soft" data-dur="8">8s</button>
+    </div>
+    <div class="xrow">
+      <button class="btn-soft" id="recBtn" style="flex:2">⏺ Record clip</button>
+      <button class="btn-soft" id="pngBtn">📸 PNG frame</button>
+    </div>
+    <div class="xrow" id="resultRow" style="display:none">
+      <button class="btn-soft" id="toEditor">➕ Send to editor</button>
+      <button class="btn-soft" id="shareBtn">📤 Share</button>
+      <button class="btn-soft" id="dlBtn">⤓ Save</button>
+    </div>
+    <p class="muted" id="expHint" style="font-size:11px;line-height:1.5">
+      Records the stage as a video clip — send it straight onto the editor timeline.
+    </p>
+  </div>
+
+  <!-- Floating overlays -->
+  <div id="status" class="mica-panel">open a drawing to start</div>
+  <div id="hud"><span class="dot"></span><span id="hud-text"></span></div>
+  <div id="stick" data-thumbstick>
+    <div class="label lt">File</div><div class="label lb">Export</div>
+    <div class="label ll">Character</div><div class="label lr">Motion</div>
+    <div id="nub"><div class="core"></div></div>
+  </div>
+</div>
+
+<!-- Shell controller: the shared Sys-free port of FlickPaint's initShell + initStick (same as 3D). -->
+<script>
+(function () {
+  const body = document.body;
+  const $ = (id) => document.getElementById(id);
+  const stick = $('stick'), nub = $('nub');
+
+  function setView(v) { body.dataset.view = v; syncStick(); }
+  function toggleView(v) { setView(body.dataset.view === v ? 'center' : v); }
+
+  document.querySelectorAll('.tab[data-toggle]').forEach(t =>
+    t.addEventListener('click', () => toggleView(t.dataset.toggle)));
+  $('dismiss').addEventListener('click', () => setView('center'));
+  $('chev').addEventListener('click', () => toggleView('top'));
+
+  const ET = 28;
+  let sx = 0, sy = 0, tracking = false;
+  addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.panel, #top, #stick, .joint, #pip')) { tracking = false; return; }
+    const w = innerWidth, h = innerHeight;
+    tracking = (e.clientX < ET || e.clientX > w - ET || e.clientY > h - ET);
+    sx = e.clientX; sy = e.clientY;
+  }, true);
+  addEventListener('pointerup', (e) => {
+    if (!tracking) return; tracking = false;
+    const dx = e.clientX - sx, dy = e.clientY - sy, ax = Math.abs(dx), ay = Math.abs(dy);
+    if (Math.max(ax, ay) < 40) return;
+    if (ax > ay) { if (sx < ET && dx > 0) setView('left'); else if (sx > innerWidth - ET && dx < 0) setView('right'); }
+    else { if (sy > innerHeight - ET && dy < 0) setView('bottom'); }
+  });
+
+  const LABEL = { left: '.ll', right: '.lr', top: '.lt', bottom: '.lb' };
+  function syncStick() {
+    stick.querySelectorAll('.label').forEach(l => l.classList.remove('act'));
+    const sel = LABEL[body.dataset.view];
+    if (sel) stick.querySelector(sel).classList.add('act');
+  }
+  stick.style.right = '18px'; stick.style.bottom = '128px'; stick.style.left = 'auto'; stick.style.top = 'auto';
+
+  let dragging = false, cx = 0, cy = 0;
+  stick.addEventListener('pointerdown', (e) => {
+    e.stopPropagation(); dragging = true;
+    const r = stick.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+    try { stick.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  stick.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    let dx = e.clientX - cx, dy = e.clientY - cy;
+    const max = 36, d = Math.hypot(dx, dy); if (d > max) { dx = dx / d * max; dy = dy / d * max; }
+    nub.style.transform = `translate(${dx}px, ${dy}px)`;
+  });
+  function endStick(e) {
+    if (!dragging) return; dragging = false; nub.style.transform = '';
+    const dx = e.clientX - cx, dy = e.clientY - cy, ax = Math.abs(dx), ay = Math.abs(dy);
+    if (Math.max(ax, ay) > 22) {
+      if (ax > ay) setView(dx < 0 ? 'left' : 'right');
+      else setView(dy < 0 ? 'top' : 'bottom');
+    }
+  }
+  stick.addEventListener('pointerup', endStick);
+  stick.addEventListener('pointercancel', endStick);
+
+  let thumbOn = true;
+  const tg = $('stick-toggle');
+  function applyThumb() { stick.style.display = thumbOn ? 'flex' : 'none'; tg.classList.toggle('on', thumbOn); }
+  tg.addEventListener('click', () => { thumbOn = !thumbOn; applyThumb(); });
+
+  applyThumb(); syncStick();
+})();
+</script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "../three/vendor/three.module.min.js"
+  }
+}
+</script>
+<script type="module" src="./app.js"></script>
+<script src="../../shared/presenter.js"></script>
+</body>
+</html>
