@@ -28,7 +28,11 @@
   --mica-rgb:    20 22 28;
   --mica-opacity: .72;
   --transparency: 1;
-  --glass: rgba(var(--mica-rgb), calc(var(--mica-opacity) * var(--transparency)));
+  /* modern rgb() slash syntax — NOT rgba(var(--mica-rgb), alpha): --mica-rgb is a space-separated
+     triple, and mixing that with a legacy comma before the alpha is invalid CSS, which silently
+     drops the whole background-color (every "acrylic" surface in the shell rendered flat opaque
+     instead of tinted glass). This is the one place that combination has to be right. */
+  --glass: rgb(var(--mica-rgb) / calc(var(--mica-opacity) * var(--transparency)));
 
   /* acrylic material — flickpaint's .mica-panel recipe, ported to host tokens so the studio chrome
      (taskbar, menus, drawers) wears the exact same frosted glass as the paint panes. One recipe,
