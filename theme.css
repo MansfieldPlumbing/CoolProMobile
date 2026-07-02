@@ -14,10 +14,12 @@
   --muted:     #8b93a7;
   --faint:     #5b6275;
 
+  /* One honest blue, not a blue-into-violet gradient: --accent-2 is a deeper shade of the SAME
+     hue (monochromatic), not a hue-shift toward purple. Public-interest tool, not a neon sign. */
   --accent:    #5b8cff;
-  --accent-2:  #7a6cff;
+  --accent-2:  #2f5fc7;
   --accent-fg: #ffffff;     /* readable foreground ON the accent (obp contract) */
-  --neon:      #5bffd0;
+  --neon:      #3fae9c;     /* calm teal — kept the name (referenced by id elsewhere), toned the value down */
   --success:   #3fcf8e;
   --warning:   #f5b14c;
   --error:     #ef5e6b;
