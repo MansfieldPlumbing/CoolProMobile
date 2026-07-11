@@ -89,19 +89,7 @@
     <div id="nub"><div class="core"></div></div>
   </div>
 
-  <!-- Object-eraser staged action bar (Draw → Snap → Preview → Refine → Erase) -->
-  <div id="erasebar" class="mica-panel">
-    <button class="eb icon" id="eb-undo" title="Undo"><span class="ic" data-icon="undo"></span></button>
-    <button class="eb icon" id="eb-redo" title="Redo"><span class="ic" data-icon="redo"></span></button>
-    <div class="ebsep"></div>
-    <div class="ebseg">
-      <button class="eb icon" id="eb-add" title="Add to the selection"><span class="ic" data-icon="plusc"></span></button>
-      <button class="eb icon" id="eb-remove" title="Remove from the selection"><span class="ic" data-icon="minusc"></span></button>
-    </div>
-    <div class="ebsep"></div>
-    <button class="eb icon" id="eb-cancel" title="Cancel"><span class="ic" data-icon="x"></span></button>
-    <button class="eb cta" id="eb-erase" title="Erase the selected object"><span class="ic" data-icon="ai"></span><span>Erase</span></button>
-  </div>
+  <!-- Object-eraser staged action bar removed — all selection/segmentation tools unified in Tools panel -->
 </div>
 
 <script type="module">
@@ -618,7 +606,6 @@ reg({ id: 'magic', name: 'Magic Wand', type: 'select', cursor: 'default',
 //   tap = first SAM point (new object)   add = tap more +points   remove = tap -points
 //   lasso (= AI Lasso tool) = box prompt -> snap to the object
 let aiMode = 'tap', _lasso = null, _stroke = null, aiSnap = true;
-let eraseReview = false;   // true once an object is AI-selected → show the erase preview + action bar
 let _aiPts = [];           // accumulated SAM prompts [{x,y,label}] — label 1=include, 0=exclude
 let _toolPrev = 'brush';   // last non-picker tool, so the eyedropper can snap back to it
 // keep lasso points on the image: out-of-bounds rides the edge instead of going chaotic (Samsung-style)
@@ -1851,35 +1838,10 @@ function selectionToMask(sel, W, H) {                   // -> layer-size HARD-ed
   g.putImageData(id, 0, 0);
   return m;
 }
-function aiClearSel() { eraseReview = false; _aiPts = []; if (doc('selection')) { pushUndo(); setSelection(null); } else updateEraseBar(); }
+function aiClearSel() { _aiPts = []; if (doc('selection')) { pushUndo(); setSelection(null); } }
 
-/* ---- Object-eraser staged action bar: Undo/Redo · Add/Remove refine · Erase CTA ---- */
-function initEraseBar() {
-  const bar = $('#erasebar'); if (!bar) return;
-  $('#eb-undo').onclick = () => History.undo();
-  $('#eb-redo').onclick = () => History.redo();
-  const setRefine = (mode) => {
-    eraseReview = true; aiMode = mode; setSession('tool', 'airefine');
-    hud(mode === 'add' ? 'Add — tap parts to include' : 'Remove — tap parts to drop');
-    updateEraseBar();
-  };
-  $('#eb-add').onclick = () => setRefine('add');
-  $('#eb-remove').onclick = () => setRefine('remove');
-  $('#eb-cancel').onclick = () => { aiClearSel(); hud('Selection cleared'); };
-  $('#eb-erase').onclick = () => aiMagicErase();
-  paintIcons(bar);
-  updateEraseBar();
-}
-function updateEraseBar() {
-  const bar = $('#erasebar'); if (!bar) return;
-  const hasSel = !!doc('selection');
-  if (!hasSel) eraseReview = false;
-  bar.classList.toggle('on', hasSel);
-  const undo = $('#eb-undo'), redo = $('#eb-redo'); if (undo) undo.disabled = !session('canUndo'); if (redo) redo.disabled = !session('canRedo');
-  const refining = session('tool') === 'airefine';
-  $('#eb-add').classList.toggle('on', refining && aiMode === 'add');
-  $('#eb-remove').classList.toggle('on', refining && aiMode === 'remove');
-}
+/* ---- Erase bar removed — all selection/segmentation tools unified in Tools panel ---- */
+function initEraseBar() { /* no-op: erasebar removed */ }
 async function aiMagicErase() {
   if (aiBusy) { hud('Hold on — the AI is still working…'); return; }
   const aid = doc('activeLayerId'); const cv = layerCanvases.get(aid);
